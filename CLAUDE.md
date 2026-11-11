@@ -61,6 +61,7 @@ Before considering a task done: `make lint DEV_ENV=local check_only=true` and `m
 - Monetary amounts as signed `DecimalField` (negative = expense); the balance is never stored, it is computed.
 - One currency per wallet, no conversion.
 - No per-object permissions for now: all users see and edit everything.
+- API with Django REST framework under `/api/` (`core/urls.py`, namespace `api`): session authentication (same origin as the SPA via the Vite proxy), `IsAuthenticated` by default; public views declare `AllowAny`. Write requests from an authenticated user require the `X-CSRFToken` header (`csrftoken` cookie).
 
 ## Docker
 
