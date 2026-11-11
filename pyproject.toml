@@ -13,6 +13,7 @@ skip_glob = [
     "junit",
     "env",
     "lib",
+    "frontend",
 ]
 src_paths = [
     "backend",
@@ -55,7 +56,7 @@ timeout = 25
 targets = [
     "backend",
 ]
-exclude_dirs = ["tests", "venv", ".venv", ".virtualenv", "env", "lib"]
+exclude_dirs = ["tests", "venv", ".venv", ".virtualenv", "env", "lib", "frontend"]
 
 [tool.coverage.run]
 branch = true

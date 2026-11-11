@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      # Same database, credentials and host port as docker compose, so the committed .env works as is
+      db:
+        image: postgres:17.2-alpine
+        env:
+          POSTGRES_DB: backend-local
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U test -d backend-local"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: requirements/*.txt
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gettext
+      - name: Install Python dependencies
+        run: pip install -r requirements/local.txt
+      - name: Compile translations
+        run: make compilemessages DEV_ENV=local
+      - name: Lint
+        run: make lint DEV_ENV=local check_only=true
+      - name: Check migrations
+        run: python backend/manage.py makemigrations --check --dry-run
+      - name: Test
+        run: make test DEV_ENV=local
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: make frontend-install DEV_ENV=local
+      - name: Lint
+        run: make frontend-lint DEV_ENV=local check_only=true
+      - name: Test
+        run: make frontend-test DEV_ENV=local
+      - name: Build
+        run: make frontend-build DEV_ENV=local

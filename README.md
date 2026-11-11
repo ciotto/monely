@@ -3,7 +3,7 @@
 Monely is a self-hosted web app for managing family finances: wallets, transactions and a monthly dashboard that
 shows where the money goes. It is designed to be used by a single household, with a few users sharing the same data.
 
-> **Status:** early development (milestone M0). The backend and frontend skeletons are in place.
+> **Status:** early development. M0 (foundations) is complete: backend, frontend, Docker and CI are in place; next up is M1.
 
 ## Guiding principles
 
@@ -67,18 +67,18 @@ Tags were initially in this list and have been moved into the data model.
 
 ## Roadmap
 
-- **M0 – Foundations**: repository, tooling, CI, custom User, Docker, base template with a minimal design system.
-- **M1 – Auth and setup**: welcome flow, login/logout, invitations, profile management.
-- **M2 – Wallets**: CRUD.
-- **M3 – Transactions**: categories, CRUD, list with filters.
-- **M4 – Dashboard**: aggregations, charts, month selector.
-- **M5 – Polish for v0.1**: i18n, installation docs, backup/CSV export, published Docker image.
-- **M6 – v0.2**: transfers between wallets.
-- **M7 – v0.3**: recurring transactions.
-- **M8 – v0.4**: budgeting by category and goals.
-- **M9 – v0.5**: family balance: identify shared expenses and compute how much each family member has to transfer to
+- [x] **M0 – Foundations**: repository, tooling, CI, custom User, Docker, base template with a minimal design system.
+- [ ] **M1 – Auth and setup**: welcome flow, login/logout, invitations, profile management.
+- [ ] **M2 – Wallets**: CRUD.
+- [ ] **M3 – Transactions**: categories, CRUD, list with filters.
+- [ ] **M4 – Dashboard**: aggregations, charts, month selector.
+- [ ] **M5 – Polish for v0.1**: i18n, installation docs, backup/CSV export, published Docker image.
+- [ ] **M6 – v0.2**: transfers between wallets.
+- [ ] **M7 – v0.3**: recurring transactions.
+- [ ] **M8 – v0.4**: budgeting by category and goals.
+- [ ] **M9 – v0.5**: family balance: identify shared expenses and compute how much each family member has to transfer to
   the joint account to cover them.
-- **M10 – v0.6**: CSV/xlsx import from banks: raw import, duplicate handling and reconciliation, warnings for
+- [ ] **M10 – v0.6**: CSV/xlsx import from banks: raw import, duplicate handling and reconciliation, warnings for
   transactions that were not entered (manual entry drives the data, imports help find what is missing).
 
 ## Getting started
