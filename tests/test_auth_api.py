@@ -2,9 +2,6 @@ import pytest
 from django.contrib.auth import SESSION_KEY
 from django.core.cache import cache
 from django.urls import reverse
-from rest_framework.test import APIClient
-
-from core.models import User
 
 
 @pytest.mark.django_db
@@ -16,14 +13,6 @@ class TestLoginView:
         cache.clear()
         yield
         cache.clear()
-
-    @pytest.fixture
-    def api_client(self):
-        return APIClient(enforce_csrf_checks=True)
-
-    @pytest.fixture
-    def user(self):
-        return User.objects.create_user("mario@example.com", "secret-pass", first_name="Mario", last_name="Rossi")
 
     def test_login(self, api_client, user):
         response = api_client.post(self.url, {"email": "mario@example.com", "password": "secret-pass"}, format="json")
@@ -76,3 +65,54 @@ class TestLoginView:
         response = api_client.post(self.url, {"email": "mario@example.com", "password": "secret-pass"}, format="json")
 
         assert response.status_code == 429
+
+
+@pytest.mark.django_db
+class TestLogoutView:
+    url = reverse("api:logout")
+
+    def test_logout(self, api_client, user):
+        api_client.force_login(user)
+        csrf_token = api_client.get(reverse("api:me")).cookies["csrftoken"].value
+
+        response = api_client.post(self.url, HTTP_X_CSRFTOKEN=csrf_token)
+
+        assert response.status_code == 204
+        assert SESSION_KEY not in api_client.session
+
+    def test_logout_without_csrf_token(self, api_client, user):
+        api_client.force_login(user)
+
+        response = api_client.post(self.url)
+
+        assert response.status_code == 403
+        assert api_client.session[SESSION_KEY] == str(user.pk)
+
+    def test_logout_anonymous(self, api_client):
+        response = api_client.post(self.url)
+
+        assert response.status_code == 204
+
+
+@pytest.mark.django_db
+class TestMeView:
+    url = reverse("api:me")
+
+    def test_me(self, api_client, user):
+        api_client.force_login(user)
+
+        response = api_client.get(self.url)
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "id": user.pk,
+            "email": "mario@example.com",
+            "first_name": "Mario",
+            "last_name": "Rossi",
+        }
+
+    def test_me_anonymous(self, api_client):
+        response = api_client.get(self.url)
+
+        assert response.status_code == 403
+        assert "csrftoken" in response.cookies
