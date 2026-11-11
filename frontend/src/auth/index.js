@@ -53,5 +53,8 @@ export async function authGuard(to) {
   if (to.meta.public) {
     return to.name === "login" && auth.user ? { name: "dashboard" } : true;
   }
-  return auth.user ? true : { name: "login", query: { next: to.fullPath } };
+  if (!auth.user) {
+    return { name: "login", query: { next: to.fullPath } };
+  }
+  return to.meta.admin && !auth.user.is_staff ? { name: "dashboard" } : true;
 }

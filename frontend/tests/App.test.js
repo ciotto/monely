@@ -7,7 +7,7 @@ import { auth } from "@/auth";
 import { i18n, setLocale } from "@/i18n";
 import { createAppRouter } from "@/router";
 
-import { mockFetch, USER } from "./helpers";
+import { ADMIN, mockFetch, USER } from "./helpers";
 
 async function mountAt(path) {
   const router = createAppRouter(createMemoryHistory());
@@ -43,6 +43,7 @@ describe("App", () => {
       expect(wrapper.find("h1").text()).toBe("Dashboard");
       expect(wrapper.text()).toContain("No data yet");
       expect(wrapper.find("header").text()).toContain("anna@example.com");
+      expect(wrapper.find("header").text()).not.toContain("Users");
     });
 
     it("renders the not found page for unknown paths", async () => {
@@ -191,6 +192,49 @@ describe("App", () => {
       const { wrapper } = await mountAt("/setup");
       await submitSetup(wrapper);
       expect(wrapper.find("[role=alert]").text()).toBe("Setup failed: try again later.");
+    });
+  });
+
+  describe("users", () => {
+    const USERS = [
+      { ...ADMIN, last_name: "Bianchi", is_active: true, last_login: "2026-11-12T10:30:00Z" },
+      { ...USER, id: 2, email: "luca@example.com", first_name: "", is_active: false, last_login: null },
+    ];
+
+    it("lists the users from the header link", async () => {
+      mockFetch({ "GET /api/auth/me/": [200, ADMIN], "GET /api/users/": [200, USERS] });
+      const { wrapper, router } = await mountAt("/");
+      await wrapper.find("header a[href='/users']").trigger("click");
+      await flushPromises();
+      expect(router.currentRoute.value.name).toBe("users");
+      expect(wrapper.find("h1").text()).toBe("Users");
+
+      const rows = wrapper.findAll("tbody tr").map((row) => row.findAll("td").map((cell) => cell.text()));
+      expect(rows).toEqual([
+        ["Anna Bianchi", "anna@example.com", "Admin", "Active", expect.stringContaining("2026")],
+        ["—", "luca@example.com", "Member", "Inactive", "Never"],
+      ]);
+    });
+
+    it("shows a loading message while fetching", async () => {
+      mockFetch({ "GET /api/auth/me/": [200, ADMIN] });
+      fetch.mockImplementation(async (url) =>
+        url === "/api/users/" ? new Promise(() => {}) : { ok: true, status: 200, json: async () => ADMIN },
+      );
+      const { wrapper } = await mountAt("/users");
+      expect(wrapper.text()).toContain("Loading…");
+    });
+
+    it("shows an error when the users cannot be loaded", async () => {
+      mockFetch({ "GET /api/auth/me/": [200, ADMIN], "GET /api/users/": [500, {}] });
+      const { wrapper } = await mountAt("/users");
+      expect(wrapper.find("[role=alert]").text()).toBe("Unable to load the users: try again later.");
+    });
+
+    it("is not reachable by non admin users", async () => {
+      mockFetch({ "GET /api/auth/me/": [200, USER] });
+      const { router } = await mountAt("/users");
+      expect(router.currentRoute.value.name).toBe("dashboard");
     });
   });
 });

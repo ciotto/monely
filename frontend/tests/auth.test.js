@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { auth, authGuard, fetchUser, login, logout, setup } from "@/auth";
 
-import { mockFetch, USER } from "./helpers";
+import { ADMIN, mockFetch, USER } from "./helpers";
 
 describe("auth", () => {
   beforeEach(() => {
@@ -78,6 +78,14 @@ describe("auth", () => {
     it("disables the setup page once a user exists", async () => {
       auth.ready = true;
       expect(await authGuard({ name: "setup", meta: {} })).toEqual({ name: "dashboard" });
+    });
+
+    it("lets only admins reach admin pages", async () => {
+      const to = { name: "users", meta: { admin: true }, fullPath: "/users" };
+      Object.assign(auth, { user: USER, ready: true });
+      expect(await authGuard(to)).toEqual({ name: "dashboard" });
+      auth.user = ADMIN;
+      expect(await authGuard(to)).toBe(true);
     });
 
     it("sends logged in users away from the login page", async () => {

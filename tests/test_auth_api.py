@@ -23,6 +23,7 @@ class TestLoginView:
             "email": "mario@example.com",
             "first_name": "Mario",
             "last_name": "Rossi",
+            "is_staff": False,
         }
         assert api_client.session[SESSION_KEY] == str(user.pk)
         assert "csrftoken" in response.cookies
@@ -109,6 +110,7 @@ class TestMeView:
             "email": "mario@example.com",
             "first_name": "Mario",
             "last_name": "Rossi",
+            "is_staff": False,
         }
 
     def test_me_anonymous(self, api_client):

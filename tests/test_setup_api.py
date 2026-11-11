@@ -33,6 +33,7 @@ class TestSetupView:
             "email": "anna@example.com",
             "first_name": "Anna",
             "last_name": "Bianchi",
+            "is_staff": True,
         }
         assert user.check_password("Zx9!long-pass")
         assert user.is_superuser

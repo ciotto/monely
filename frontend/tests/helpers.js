@@ -1,6 +1,7 @@
 import { vi } from "vitest";
 
-export const USER = { id: 1, email: "anna@example.com", first_name: "Anna", last_name: "" };
+export const USER = { id: 1, email: "anna@example.com", first_name: "Anna", last_name: "", is_staff: false };
+export const ADMIN = { ...USER, is_staff: true };
 
 // Stubs `fetch` with responses keyed by "METHOD /url": [status, data]; data undefined means an empty body
 export function mockFetch(responses) {

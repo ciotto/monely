@@ -5,7 +5,8 @@
   "nav": {
     "dashboard": "Dashboard",
     "language": "Lingua",
-    "logout": "Esci"
+    "logout": "Esci",
+    "users": "Utenti"
   },
   "login": {
     "title": "Accedi",
@@ -38,6 +39,27 @@
   "dashboard": {
     "title": "Dashboard",
     "empty": "Nessun dato ancora: aggiungi un portafoglio per iniziare."
+  },
+  "users": {
+    "title": "Utenti",
+    "loading": "Caricamento…",
+    "error": "Impossibile caricare gli utenti: riprova più tardi.",
+    "columns": {
+      "name": "Nome",
+      "email": "Email",
+      "role": "Ruolo",
+      "status": "Stato",
+      "lastLogin": "Ultimo accesso"
+    },
+    "roles": {
+      "admin": "Amministratore",
+      "member": "Membro"
+    },
+    "statuses": {
+      "active": "Attivo",
+      "inactive": "Disattivato"
+    },
+    "never": "Mai"
   },
   "notFound": {
     "title": "Pagina non trovata",

@@ -4,13 +4,14 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
 from rest_framework.exceptions import NotFound
-from rest_framework.permissions import AllowAny
+from rest_framework.generics import ListAPIView
+from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from core.models import User
-from core.serializers import LoginSerializer, SetupSerializer, UserSerializer
+from core.serializers import AdminUserSerializer, LoginSerializer, SetupSerializer, UserSerializer
 
 
 class LoginView(APIView):
@@ -66,3 +67,9 @@ class LogoutView(APIView):
 class MeView(APIView):
     def get(self, request):
         return Response(UserSerializer(request.user).data)
+
+
+class UserListView(ListAPIView):
+    permission_classes = [IsAdminUser]
+    queryset = User.objects.order_by("email")
+    serializer_class = AdminUserSerializer
