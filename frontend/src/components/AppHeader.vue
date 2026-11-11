@@ -1,9 +1,17 @@
 <script setup>
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 
+import { auth, logout } from "@/auth";
 import { setLocale, SUPPORTED_LOCALES } from "@/i18n";
 
 const { locale } = useI18n();
+const router = useRouter();
+
+async function signOut() {
+  await logout();
+  await router.push({ name: "login" });
+}
 </script>
 
 <template>
@@ -11,9 +19,13 @@ const { locale } = useI18n();
     <div class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
       <RouterLink to="/" class="text-xl font-bold text-brand">Monely</RouterLink>
       <nav class="flex items-center gap-4 text-sm">
-        <RouterLink to="/" class="hover:text-brand" active-class="font-semibold text-brand">
-          {{ $t("nav.dashboard") }}
-        </RouterLink>
+        <template v-if="auth.user">
+          <RouterLink to="/" class="hover:text-brand" active-class="font-semibold text-brand">
+            {{ $t("nav.dashboard") }}
+          </RouterLink>
+          <span class="text-slate-500">{{ auth.user.email }}</span>
+          <button type="button" class="hover:text-brand" @click="signOut">{{ $t("nav.logout") }}</button>
+        </template>
         <label class="flex items-center gap-2">
           <span class="sr-only">{{ $t("nav.language") }}</span>
           <select

@@ -7,6 +7,8 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   // Django dev server: localhost outside docker, the `backend` service inside it
   const backendUrl = env.BACKEND_URL || "http://localhost:8000";
+  // Keeps the browser Host header: Django's CSRF check requires it to match the Origin (the shorthand rewrites it)
+  const backend = { target: backendUrl, changeOrigin: false };
 
   return {
     plugins: [vue(), tailwindcss()],
@@ -19,9 +21,9 @@ export default defineConfig(({ mode }) => {
       host: true,
       port: 5173,
       proxy: {
-        "/api": backendUrl,
-        "/admin": backendUrl,
-        "/static": backendUrl,
+        "/api": backend,
+        "/admin": backend,
+        "/static": backend,
       },
     },
     test: {

@@ -4,7 +4,36 @@
   },
   "nav": {
     "dashboard": "Dashboard",
-    "language": "Lingua"
+    "language": "Lingua",
+    "logout": "Esci"
+  },
+  "login": {
+    "title": "Accedi",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Accedi",
+    "errors": {
+      "invalid": "Email o password non validi.",
+      "throttled": "Troppi tentativi: riprova tra qualche minuto.",
+      "generic": "Accesso non riuscito: riprova più tardi."
+    }
+  },
+  "setup": {
+    "title": "Ti diamo il benvenuto in Monely",
+    "intro": "Crea il primo account per iniziare a gestire le finanze di famiglia.",
+    "fields": {
+      "first_name": "Nome",
+      "last_name": "Cognome",
+      "email": "Email",
+      "password": "Password",
+      "password_confirm": "Conferma password"
+    },
+    "submit": "Crea account",
+    "errors": {
+      "mismatch": "Le password non coincidono.",
+      "invalid": "Controlla i campi qui sotto.",
+      "generic": "Configurazione non riuscita: riprova più tardi."
+    }
   },
   "dashboard": {
     "title": "Dashboard",
