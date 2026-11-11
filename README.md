@@ -3,7 +3,7 @@
 Monely is a self-hosted web app for managing family finances: wallets, transactions and a monthly dashboard that
 shows where the money goes. It is designed to be used by a single household, with a few users sharing the same data.
 
-> **Status:** early development (milestone M0). The backend skeleton is in place; the frontend is not there yet.
+> **Status:** early development (milestone M0). The backend and frontend skeletons are in place.
 
 ## Guiding principles
 
@@ -15,12 +15,13 @@ shows where the money goes. It is designed to be used by a single household, wit
 
 | Area           | Choice                                                                                       |
 |----------------|----------------------------------------------------------------------------------------------|
-| Architecture   | Django REST API + Vue single-page app                                                        |
-| Styling        | Tailwind CSS + Chart.js                                                                      |
+| Architecture   | Django REST API + Vue 3 single-page app (Vite, vue-router, vue-i18n)                         |
+| Styling        | Tailwind CSS 4 + Chart.js (charts arrive with the dashboard, M4)                             |
 | Database       | PostgreSQL, from day one, via docker compose                                                 |
 | Authentication | Django built-in authentication with email login; no 2FA and no django-allauth for now        |
 | Deployment     | docker compose, also for local development; no reverse proxy                                 |
 | Tooling        | `pip` (separate dev requirements), isort, black, flake8, bandit, coverage (100%), pytest + pytest-django, GitHub Actions |
+| Frontend tooling | npm (exact versions), ESLint, Prettier, Vitest + Vue Test Utils (coverage 100%)            |
 | Languages      | English and Italian                                                                          |
 | License        | MIT                                                                                          |
 
@@ -86,7 +87,7 @@ Tags were initially in this list and have been moved into the data model.
 
 - Docker with docker compose
 - GNU Make
-- Python 3.14 (only to run commands outside Docker)
+- Python 3.14 and Node.js >= 22.12 (only to run commands outside Docker; see `frontend/.nvmrc`)
 
 ### Run with Docker
 
@@ -94,8 +95,13 @@ Tags were initially in this list and have been moved into the data model.
 make init
 ```
 
-This builds the images, starts PostgreSQL and the backend, collects static files and applies the migrations. The app
-is available at <http://localhost:8000>, and PostgreSQL is exposed on the host on port `5433`.
+This builds the images, starts PostgreSQL, the backend and the frontend dev server, collects static files and applies
+the migrations. The SPA is available at <http://localhost:5173>, the Django backend at <http://localhost:8000>, and
+PostgreSQL is exposed on the host on port `5433`.
+
+The Vite dev server proxies `/api`, `/admin` and `/static` to Django, so during development you only need to open the
+frontend URL. The backend address is read from `BACKEND_URL` (default `http://localhost:8000`; inside docker compose it
+points to the `backend` service).
 
 Create an admin user with:
 
@@ -105,13 +111,20 @@ make createsuperuser
 
 ### Run locally
 
-Every `make` target runs inside Docker by default. Add `DEV_ENV=local` to use a local virtualenv instead (only the
-database runs in Docker):
+Every `make` target runs inside Docker by default. Add `DEV_ENV=local` to use a local virtualenv and the local Node.js
+instead (only the database runs in Docker):
 
 ```bash
 python3.14 -m venv .virtualenv
 source .virtualenv/bin/activate
 make start DEV_ENV=local
+```
+
+In another terminal, start the frontend:
+
+```bash
+make frontend-install DEV_ENV=local
+make frontend-dev
 ```
 
 ## Configuration
@@ -143,6 +156,11 @@ Run `make help` to list all targets. The most common ones:
 | `make test`               | Run pytest with coverage (the build fails below 100%)                |
 | `make lint`               | Run Django check, isort, black, flake8 and bandit                    |
 | `make build-translations` | Extract and compile the IT/EN translations                           |
+| `make frontend-install`   | Install the frontend dependencies (`npm ci`)                         |
+| `make frontend-dev`       | Start the Vite dev server on port `5173` (outside Docker)            |
+| `make frontend-lint`      | Run ESLint and Prettier                                              |
+| `make frontend-test`      | Run Vitest with coverage (the build fails below 100%)                |
+| `make frontend-build`     | Build the frontend for production in `frontend/dist`                 |
 
 Run a single test:
 
@@ -157,10 +175,20 @@ make lint DEV_ENV=local check_only=true
 make test DEV_ENV=local
 ```
 
+If you changed the frontend, also run:
+
+```bash
+make frontend-lint check_only=true
+make frontend-test
+```
+
 ### Conventions
 
 - black and isort (black profile), 120-character lines.
-- User-facing strings are always translated with `gettext_lazy`.
+- User-facing strings are always translated with `gettext_lazy`; in the frontend with `$t()`, with keys in both
+  `frontend/src/locales/it.json` and `en.json`.
+- Frontend: plain JavaScript (no TypeScript), `<script setup>` components, Prettier with 120-character lines, npm
+  dependencies pinned to exact versions.
 - Every model change comes with its migration.
 - New code is covered by tests: coverage stays at 100%.
 
@@ -172,7 +200,10 @@ backend/
   monely/          Django project (settings, urls, asgi, wsgi)
   core/            main app, including the custom User model
   locales/         IT/EN translations
-frontend/          Vue SPA (coming soon)
+frontend/
+  src/             Vue SPA: main.js, App.vue, router/, i18n/, locales/, views/, components/
+  src/assets/      main.css, with the design system tokens in Tailwind's @theme
+  tests/           Vitest tests
 requirements/      base.txt (runtime), local.txt (dev/test/lint), production.txt
 tests/             pytest tests
 ```

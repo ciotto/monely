@@ -1,0 +1,17 @@
+{
+  "app": {
+    "tagline": "Family finances, made simple."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "language": "Language"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "empty": "No data yet: add a wallet to get started."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "back": "Back to the dashboard"
+  }
+}

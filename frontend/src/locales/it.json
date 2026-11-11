@@ -1,0 +1,17 @@
+{
+  "app": {
+    "tagline": "Le finanze di famiglia, semplici."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "language": "Lingua"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "empty": "Nessun dato ancora: aggiungi un portafoglio per iniziare."
+  },
+  "notFound": {
+    "title": "Pagina non trovata",
+    "back": "Torna alla dashboard"
+  }
+}

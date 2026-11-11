@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+/* Minimal design system: extend here, use the tokens as Tailwind classes (e.g. bg-brand) */
+@theme {
+  --color-brand: #0f766e;
+  --color-brand-dark: #115e59;
+  --color-income: #15803d;
+  --color-expense: #b91c1c;
+}

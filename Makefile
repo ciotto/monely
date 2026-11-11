@@ -182,6 +182,42 @@ else
 	@bandit -c pyproject.toml -r .
 endif
 
+# Frontend
+
+ifeq ($(DEV_ENV),docker)
+FRONTEND_RUN=docker compose run --rm --no-deps frontend
+else
+FRONTEND_RUN=cd frontend &&
+endif
+
+#: Install the frontend dependencies
+frontend-install:
+	@echo "\n${BLUE}Installing frontend dependencies...${NC}\n"
+	@$(FRONTEND_RUN) npm ci
+
+#: Start the frontend development server (outside docker)
+frontend-dev:
+	@cd frontend && npm run dev
+
+#: Run frontend linting (eslint, prettier). Use check_only=true to prevent changes
+frontend-lint:
+	@echo "\n${BLUE}Running eslint and prettier...${NC}\n"
+ifdef check_only
+	@$(FRONTEND_RUN) npm run lint:check
+else
+	@$(FRONTEND_RUN) npm run lint
+endif
+
+#: Run frontend tests with coverage using vitest
+frontend-test:
+	@echo "\n${BLUE}Running vitest...${NC}\n"
+	@$(FRONTEND_RUN) npm test
+
+#: Build the frontend for production in frontend/dist
+frontend-build:
+	@echo "\n${BLUE}Building frontend...${NC}\n"
+	@$(FRONTEND_RUN) npm run build
+
 # Docker
 #: Build the doker containers
 build:
@@ -194,6 +230,6 @@ up:
 ifeq ($(DEV_ENV),docker)
 	@docker compose up -d --remove-orphans
 else
-	@docker compose up -d --remove-orphans --scale backend=0
+	@docker compose up -d --remove-orphans --scale backend=0 --scale frontend=0
 endif
 

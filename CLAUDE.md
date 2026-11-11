@@ -7,7 +7,7 @@ Guide for Claude Code on this repository. Vision, data model and roadmap are in 
 Monely: an app for managing family finances (wallets, transactions, monthly dashboard).
 
 - Backend Django 6.1 on Python 3.14, PostgreSQL 17 via docker compose.
-- Planned frontend: Vue + Tailwind + Chart.js SPA (not yet present).
+- Frontend in `frontend/`: Vue 3 + Vite + Tailwind 4 SPA, vue-router, vue-i18n; Node >= 22.12 (`frontend/.nvmrc`). Chart.js will come with the dashboard (M4).
 - MIT license.
 
 ## Structure
@@ -17,6 +17,8 @@ Monely: an app for managing family finances (wallets, transactions, monthly dash
 - `backend/core/`: main app; contains the custom `User` (email login, no `username`).
 - `backend/locales/`: IT/EN translations.
 - `tests/`: pytest tests (`test_*.py`); `backend/` is on the `pythonpath`, so import `core.models`, not `backend.core.models`.
+- `frontend/src/`: `main.js`, `App.vue`, `router/`, `i18n/` + `locales/{it,en}.json`, `views/`, `components/`, `assets/main.css` (design system tokens in `@theme`).
+- `frontend/tests/`: vitest tests (`*.test.js`); alias `@` = `frontend/src`.
 - `requirements/`: `base.txt` (runtime), `local.txt` (dev/test/lint), `production.txt`.
 
 ## Configuration
@@ -41,12 +43,19 @@ All `make` targets run in docker by default; add `DEV_ENV=local` to use the `.vi
 - `make build-translations` / `make compilemessages`
 - A single test: `make test DEV_ENV=local pytest_args="tests/test_models.py -k superuser"`
 
-Before considering a task done: `make lint DEV_ENV=local check_only=true` and `make test DEV_ENV=local` must pass.
+Frontend (in docker by default, `DEV_ENV=local` uses the local Node):
+
+- `make frontend-install`, `make frontend-dev` (local dev server on `:5173`)
+- `make frontend-lint` (eslint + prettier, supports `check_only=true`), `make frontend-test` (vitest, coverage **100%**), `make frontend-build`
+- The Vite dev server proxies `/api`, `/admin`, `/static` to Django (`BACKEND_URL`, default `http://localhost:8000`).
+
+Before considering a task done: `make lint DEV_ENV=local check_only=true` and `make test DEV_ENV=local` must pass; if you touch the frontend, also `make frontend-lint check_only=true` and `make frontend-test`.
 
 ## Conventions
 
 - Formatting: black and isort with the black profile, 120-character lines.
-- User-facing strings are always translated with `gettext_lazy as _`; supported languages `it` and `en`.
+- User-facing strings are always translated with `gettext_lazy as _`; supported languages `it` and `en`. In the frontend with `$t()` and keys in both `locales/*.json` files.
+- Frontend: JavaScript (no TypeScript), `<script setup>`, Prettier at 120 characters, npm dependencies pinned to exact versions.
 - Every model change requires a migration (`make make-migration`); `makemigrations --check` must be clean.
 - All new code must be covered by tests: coverage stays at 100%. Use `# pragma: no cover` only when truly justified.
 - Monetary amounts as signed `DecimalField` (negative = expense); the balance is never stored, it is computed.
