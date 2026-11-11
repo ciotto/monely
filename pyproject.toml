@@ -1,0 +1,93 @@
+[tool.isort]
+profile = "black"
+line_length = 120
+py_version = 314
+skip_glob = [
+    ".virtualenv",
+    ".virtualenv13",
+    ".venv",
+    "virtualenv",
+    "venv",
+    "docs",
+    "logs",
+    "junit",
+    "env",
+    "lib",
+]
+src_paths = [
+    "backend",
+    "tests",
+]
+
+[tool.black]
+line-length = 120
+target-version = ['py314']
+include = 'backend\/.*\.pyi?$|tests\/.*\.pyi?$'
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "monely.settings"
+addopts = "--reuse-db"
+pythonpath = "backend"
+python_files = [
+    "test_*.py"
+]
+testpaths = [
+    "tests",
+]
+norecursedirs = [
+    ".*",
+    "*.egg",
+    "venv",
+    ".git",
+    "docs",
+    "htmlcov",
+    "__pycache__",
+    ".virtualenv",
+    ".virtualenv13",
+    ".venv",
+    "virtualenv",
+    "venv",
+    "lib"
+]
+timeout = 25
+
+[tool.bandit]
+targets = [
+    "backend",
+]
+exclude_dirs = ["tests", "venv", ".venv", ".virtualenv", "env", "lib"]
+
+[tool.coverage.run]
+branch = true
+source = [
+    "backend",
+]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+skip_covered = true
+sort = "Cover"
+omit = [
+    "tests/*",
+    "backend/*/migrations/*",
+    "backend/manage.py",
+    "backend/monely/asgi.py",
+    "backend/monely/wsgi.py",
+]
+exclude_lines = [
+    # Have to re-enable the standard pragma
+    "pragma: no cover",
+
+    # Don't complain about missing pass statements:
+    "^\\s*pass\\s*$",
+
+    # Don't complain about missing debug-only code:
+    "if settings.DEBUG",
+
+    # Don't complain if tests don't hit NotImplementedError:
+    "raise NotImplementedError",
+
+    # Don't complain if abstract methods are not run
+    "@abstractmethod",
+]

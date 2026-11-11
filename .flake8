@@ -1,0 +1,20 @@
+[flake8]
+max-line-length = 120
+# E203: whitespace before ':' (conflict with Black)
+# E731: do not assign a lambda expression, use a def (large use)
+extend-ignore = E203, E731
+exclude =
+        .virtualenv,
+        .virtualenv13,
+        .venv,
+        .env,
+        virtualenv,
+        venv,
+        docs/*,
+        htmlcov/*,
+        static/*,
+        lib/*,
+        */migrations/*,
+per-file-ignores =
+    # Ignore unused import warnings in all __init__.py files
+    */__init__.py: F401

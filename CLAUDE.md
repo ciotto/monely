@@ -1,0 +1,60 @@
+# CLAUDE.md
+
+Guide for Claude Code on this repository. Vision, data model and roadmap are in `README.md`.
+
+## Project
+
+Monely: an app for managing family finances (wallets, transactions, monthly dashboard).
+
+- Backend Django 6.1 on Python 3.14, PostgreSQL 17 via docker compose.
+- Planned frontend: Vue + Tailwind + Chart.js SPA (not yet present).
+- MIT license.
+
+## Structure
+
+- `backend/manage.py`: Django entry point; `DJANGO_SETTINGS_MODULE=monely.settings`.
+- `backend/monely/`: Django project (a single `settings.py`, `urls.py`, `asgi.py`, `wsgi.py`).
+- `backend/core/`: main app; contains the custom `User` (email login, no `username`).
+- `backend/locales/`: IT/EN translations.
+- `tests/`: pytest tests (`test_*.py`); `backend/` is on the `pythonpath`, so import `core.models`, not `backend.core.models`.
+- `requirements/`: `base.txt` (runtime), `local.txt` (dev/test/lint), `production.txt`.
+
+## Configuration
+
+Environment variables are read with `django-environ`:
+
+- `.env`: generic values for local development (committed, no real secrets).
+- `.env.secrets`: local secrets, ignored by git (`make touch` creates it empty).
+- `.env.docker`: overrides for the containers (e.g. `DATABASE_URL` with host `db`).
+
+Required variables: `DATABASE_URL`. Used: `SECRET_KEY`, `DEBUG` (bool), `ALLOWED_HOSTS` (list), `EMAIL_BACKEND`.
+
+## Commands
+
+All `make` targets run in docker by default; add `DEV_ENV=local` to use the `.virtualenv` virtualenv.
+
+- `make init`: build, start containers, collectstatic and migrate.
+- `make start` / `make up` / `make build`
+- `make migrate`, `make make-migration`, `make createsuperuser`, `make shell`
+- `make test`: pytest with coverage; the threshold is **100%** (`fail_under = 100`).
+- `make lint`: Django check, isort, black, flake8, bandit. With `check_only=true` it does not modify files.
+- `make build-translations` / `make compilemessages`
+- A single test: `make test DEV_ENV=local pytest_args="tests/test_models.py -k superuser"`
+
+Before considering a task done: `make lint DEV_ENV=local check_only=true` and `make test DEV_ENV=local` must pass.
+
+## Conventions
+
+- Formatting: black and isort with the black profile, 120-character lines.
+- User-facing strings are always translated with `gettext_lazy as _`; supported languages `it` and `en`.
+- Every model change requires a migration (`make make-migration`); `makemigrations --check` must be clean.
+- All new code must be covered by tests: coverage stays at 100%. Use `# pragma: no cover` only when truly justified.
+- Monetary amounts as signed `DecimalField` (negative = expense); the balance is never stored, it is computed.
+- One currency per wallet, no conversion.
+- No per-object permissions for now: all users see and edit everything.
+
+## Docker
+
+- The `Dockerfile` has three stages: `base`, `development` (used by docker compose, with the code mounted in `/code`) and `production` (gunicorn + uvicorn on `monely.asgi:application`, port 8000).
+- Postgres is exposed on the host on port `5433`.
+- No reverse proxy planned.

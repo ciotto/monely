@@ -1,0 +1,11 @@
+-r base.txt
+
+bandit==1.9.4
+black==26.10.1
+coverage==7.17.0
+flake8==7.5.0
+isort==9.0.2
+pytest==9.2.0
+pytest-django==4.14.0
+pytest-randomly==5.0.0
+pytest-timeout==2.4.0

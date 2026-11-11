@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:17.2-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: backend-local
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d backend-local"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+    networks:
+      - monely
+    volumes:
+      - monely-db-data:/var/lib/postgresql/data
+      - ./dump:/tmp/dump
+
+  backend:
+    build:
+      context: .
+      target: development
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/code
+    env_file:
+      - .env
+      - .env.secrets
+      - .env.docker
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - python
+      - backend/manage.py
+      - runserver
+      - 0:8000
+    networks:
+      - monely
+
+networks:
+  monely:
+    name: monely
+    driver: bridge
+volumes:
+  monely-db-data:
