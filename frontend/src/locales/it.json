@@ -43,13 +43,13 @@
   "users": {
     "title": "Utenti",
     "loading": "Caricamento…",
-    "error": "Impossibile caricare gli utenti: riprova più tardi.",
     "columns": {
       "name": "Nome",
       "email": "Email",
       "role": "Ruolo",
       "status": "Stato",
-      "lastLogin": "Ultimo accesso"
+      "lastLogin": "Ultimo accesso",
+      "actions": "Azioni"
     },
     "roles": {
       "admin": "Amministratore",
@@ -59,7 +59,38 @@
       "active": "Attivo",
       "inactive": "Disattivato"
     },
-    "never": "Mai"
+    "never": "Mai",
+    "new": "Nuovo utente",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "confirmDelete": "Eliminare l'utente {email}? L'operazione non è reversibile.",
+    "errors": {
+      "load": "Impossibile caricare gli utenti: riprova più tardi.",
+      "delete": "Impossibile eliminare l'utente: riprova più tardi."
+    },
+    "form": {
+      "titleNew": "Nuovo utente",
+      "titleEdit": "Modifica utente",
+      "fields": {
+        "first_name": "Nome",
+        "last_name": "Cognome",
+        "email": "Email",
+        "password": "Password",
+        "password_confirm": "Conferma password",
+        "is_staff": "Amministratore",
+        "is_active": "Attivo"
+      },
+      "passwordHint": "Lascia vuota la password per mantenere quella attuale.",
+      "ownAccountHint": "Non puoi cambiare il ruolo o lo stato del tuo account.",
+      "save": "Salva",
+      "cancel": "Annulla",
+      "errors": {
+        "load": "Impossibile caricare l'utente.",
+        "mismatch": "Le password non coincidono.",
+        "invalid": "Controlla i campi qui sotto.",
+        "generic": "Impossibile salvare l'utente: riprova più tardi."
+      }
+    }
   },
   "notFound": {
     "title": "Pagina non trovata",

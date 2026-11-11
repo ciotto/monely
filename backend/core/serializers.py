@@ -7,6 +7,14 @@ from rest_framework import serializers
 from core.models import User
 
 
+def check_password(password, **user_fields):
+    """Runs the Django password validators, raising the errors on the `password` field."""
+    try:
+        validate_password(password, User(**user_fields))
+    except DjangoValidationError as e:
+        raise serializers.ValidationError({"password": list(e.messages)})
+
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -14,9 +22,62 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class AdminUserSerializer(serializers.ModelSerializer):
+    """Manages the other users; `is_staff` marks the admins, which are also superusers for the Django admin."""
+
+    password = serializers.CharField(trim_whitespace=False, write_only=True)
+
     class Meta:
         model = User
-        fields = ("id", "email", "first_name", "last_name", "is_staff", "is_active", "date_joined", "last_login")
+        fields = (
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "is_staff",
+            "is_active",
+            "date_joined",
+            "last_login",
+            "password",
+        )
+        read_only_fields = ("date_joined", "last_login")
+
+    def get_fields(self):
+        fields = super().get_fields()
+        # When editing, a missing password keeps the current one
+        fields["password"].required = self.instance is None
+        return fields
+
+    def validate(self, attrs):
+        # Admins cannot lock themselves out: this also keeps at least one active admin
+        if self.instance is not None and self.instance == self.context["request"].user:
+            errors = {
+                field: _("You cannot change this on your own account.")
+                for field in ("is_staff", "is_active")
+                if field in attrs and attrs[field] != getattr(self.instance, field)
+            }
+            if errors:
+                raise serializers.ValidationError(errors)
+        if "password" in attrs:
+            check_password(
+                attrs["password"],
+                **{
+                    field: attrs.get(field, getattr(self.instance, field, ""))
+                    for field in ("email", "first_name", "last_name")
+                },
+            )
+        return attrs
+
+    def create(self, validated_data):
+        validated_data["is_superuser"] = validated_data.get("is_staff", False)
+        return User.objects.create_user(**validated_data)
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop("password", None)
+        if password is not None:
+            instance.set_password(password)
+        if "is_staff" in validated_data:
+            validated_data["is_superuser"] = validated_data["is_staff"]
+        return super().update(instance, validated_data)
 
 
 class SetupSerializer(serializers.ModelSerializer):
@@ -27,10 +88,7 @@ class SetupSerializer(serializers.ModelSerializer):
         fields = ("email", "first_name", "last_name", "password")
 
     def validate(self, attrs):
-        try:
-            validate_password(attrs["password"], User(**attrs))
-        except DjangoValidationError as e:
-            raise serializers.ValidationError({"password": list(e.messages)})
+        check_password(**attrs)
         return attrs
 
     def create(self, validated_data):

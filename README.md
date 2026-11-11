@@ -68,7 +68,7 @@ Tags were initially in this list and have been moved into the data model.
 ## Roadmap
 
 - [x] **M0 – Foundations**: repository, tooling, CI, custom User, Docker, base template with a minimal design system.
-- [ ] **M1 – Auth and setup**: welcome flow, login/logout, invitations, profile management.
+- [x] **M1 – Auth and setup**: ~~welcome~~setup flow, login/logout, ~~invitations~~, profile management.
 - [ ] **M2 – Wallets**: CRUD.
 - [ ] **M3 – Transactions**: categories, CRUD, list with filters.
 - [ ] **M4 – Dashboard**: aggregations, charts, month selector.

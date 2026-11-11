@@ -1,4 +1,4 @@
-import { flushPromises, mount } from "@vue/test-utils";
+import { enableAutoUnmount, flushPromises, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMemoryHistory } from "vue-router";
 
@@ -24,6 +24,9 @@ async function submitLogin(wrapper) {
   await wrapper.find("form").trigger("submit");
   await flushPromises();
 }
+
+// Mounted apps would otherwise keep reacting to the shared auth state of the next tests
+enableAutoUnmount(afterEach);
 
 describe("App", () => {
   beforeEach(() => {
@@ -211,8 +214,8 @@ describe("App", () => {
 
       const rows = wrapper.findAll("tbody tr").map((row) => row.findAll("td").map((cell) => cell.text()));
       expect(rows).toEqual([
-        ["Anna Bianchi", "anna@example.com", "Admin", "Active", expect.stringContaining("2026")],
-        ["—", "luca@example.com", "Member", "Inactive", "Never"],
+        ["Anna Bianchi", "anna@example.com", "Admin", "Active", expect.stringContaining("2026"), "Edit"],
+        ["—", "luca@example.com", "Member", "Inactive", "Never", "EditDelete"],
       ]);
     });
 
@@ -235,6 +238,180 @@ describe("App", () => {
       mockFetch({ "GET /api/auth/me/": [200, USER] });
       const { router } = await mountAt("/users");
       expect(router.currentRoute.value.name).toBe("dashboard");
+    });
+
+    describe("deletion", () => {
+      afterEach(() => vi.restoreAllMocks());
+
+      it("deletes another user after confirmation", async () => {
+        const fetch = mockFetch({
+          "GET /api/auth/me/": [200, ADMIN],
+          "GET /api/users/": [200, USERS],
+          "DELETE /api/users/2/": [204],
+        });
+        const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+        const { wrapper } = await mountAt("/users");
+        expect(wrapper.findAll("tbody button")).toHaveLength(1);
+
+        await wrapper.find("tbody button").trigger("click");
+        await flushPromises();
+        expect(confirm).toHaveBeenCalledWith("Delete the user luca@example.com? This cannot be undone.");
+        expect(fetch).toHaveBeenLastCalledWith("/api/users/2/", expect.objectContaining({ method: "DELETE" }));
+        expect(wrapper.findAll("tbody tr")).toHaveLength(1);
+      });
+
+      it("does nothing when the deletion is not confirmed", async () => {
+        const fetch = mockFetch({ "GET /api/auth/me/": [200, ADMIN], "GET /api/users/": [200, USERS] });
+        vi.spyOn(window, "confirm").mockReturnValue(false);
+        const { wrapper } = await mountAt("/users");
+        await wrapper.find("tbody button").trigger("click");
+        await flushPromises();
+        expect(fetch).toHaveBeenCalledTimes(2);
+        expect(wrapper.findAll("tbody tr")).toHaveLength(2);
+      });
+
+      it("shows an error when the deletion fails", async () => {
+        mockFetch({
+          "GET /api/auth/me/": [200, ADMIN],
+          "GET /api/users/": [200, USERS],
+          "DELETE /api/users/2/": [500, {}],
+        });
+        vi.spyOn(window, "confirm").mockReturnValue(true);
+        const { wrapper } = await mountAt("/users");
+        await wrapper.find("tbody button").trigger("click");
+        await flushPromises();
+        expect(wrapper.find("[role=alert]").text()).toBe("Unable to delete the user: try again later.");
+        expect(wrapper.findAll("tbody tr")).toHaveLength(2);
+      });
+    });
+  });
+
+  describe("user form", () => {
+    async function fill(wrapper, values) {
+      for (const [name, value] of Object.entries(values)) {
+        const input = wrapper.find(`input[name=${name}]`);
+        await (typeof value === "boolean" ? input.setChecked(value) : input.setValue(value));
+      }
+      await wrapper.find("form").trigger("submit");
+      await flushPromises();
+    }
+
+    it("creates a user from the list page", async () => {
+      const fetch = mockFetch({
+        "GET /api/auth/me/": [200, ADMIN],
+        "GET /api/users/": [200, []],
+        "POST /api/users/": [201, { ...USER, id: 3 }],
+      });
+      const { wrapper, router } = await mountAt("/users");
+      await wrapper.find("a[href='/users/new']").trigger("click");
+      await flushPromises();
+      expect(wrapper.find("h1").text()).toBe("New user");
+      expect(wrapper.find("input[name=password]").attributes("required")).toBeDefined();
+
+      await fill(wrapper, {
+        first_name: "Luca",
+        email: "luca@example.com",
+        password: "Zx9!long-pass",
+        password_confirm: "Zx9!long-pass",
+        is_staff: true,
+      });
+      expect(JSON.parse(fetch.mock.calls.at(-2)[1].body)).toEqual({
+        first_name: "Luca",
+        last_name: "",
+        email: "luca@example.com",
+        is_staff: true,
+        is_active: true,
+        password: "Zx9!long-pass",
+      });
+      expect(router.currentRoute.value.name).toBe("users");
+    });
+
+    it("edits a user keeping the current password", async () => {
+      const other = { ...USER, id: 2, email: "luca@example.com", is_active: true };
+      const fetch = mockFetch({
+        "GET /api/auth/me/": [200, ADMIN],
+        "GET /api/users/2/": [200, other],
+        "PATCH /api/users/2/": [200, other],
+        "GET /api/users/": [200, [other]],
+      });
+      const { wrapper, router } = await mountAt("/users/2");
+      expect(wrapper.find("h1").text()).toBe("Edit user");
+      expect(wrapper.find("input[name=email]").element.value).toBe("luca@example.com");
+      expect(wrapper.find("input[name=password]").attributes("required")).toBeUndefined();
+      expect(wrapper.text()).toContain("Leave the password empty to keep the current one.");
+
+      await fill(wrapper, { last_name: "Verdi", is_active: false });
+      const [url, { method, body }] = fetch.mock.calls.at(-2);
+      expect([url, method]).toEqual(["/api/users/2/", "PATCH"]);
+      expect(JSON.parse(body)).toEqual({
+        first_name: "Anna",
+        last_name: "Verdi",
+        email: "luca@example.com",
+        is_staff: false,
+        is_active: false,
+      });
+      expect(router.currentRoute.value.name).toBe("users");
+      expect(auth.user.email).toBe("anna@example.com");
+    });
+
+    it("edits the own account updating the header", async () => {
+      mockFetch({
+        "GET /api/auth/me/": [200, ADMIN],
+        "GET /api/users/1/": [200, { ...ADMIN, is_active: true }],
+        "PATCH /api/users/1/": [200, { ...ADMIN, email: "boss@example.com" }],
+        "GET /api/users/": [200, []],
+      });
+      const { wrapper } = await mountAt("/users/1");
+      expect(wrapper.find("input[name=is_staff]").attributes("disabled")).toBeDefined();
+      expect(wrapper.text()).toContain("You cannot change the role or the status of your own account.");
+
+      await fill(wrapper, { email: "boss@example.com", password: "Zx9!new-pass", password_confirm: "Zx9!new-pass" });
+      expect(wrapper.find("header").text()).toContain("boss@example.com");
+    });
+
+    it("checks that the passwords match", async () => {
+      const fetch = mockFetch({ "GET /api/auth/me/": [200, ADMIN] });
+      const { wrapper } = await mountAt("/users/new");
+      await fill(wrapper, { email: "luca@example.com", password: "a", password_confirm: "b" });
+      expect(wrapper.find("[role=alert]").text()).toBe("The passwords do not match.");
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("shows the field errors returned by the backend", async () => {
+      mockFetch({
+        "GET /api/auth/me/": [200, ADMIN],
+        "POST /api/users/": [
+          400,
+          {
+            email: ["A user with that email address already exists."],
+            password: ["This password is too common."],
+            is_staff: ["Must be a valid boolean."],
+          },
+        ],
+      });
+      const { wrapper, router } = await mountAt("/users/new");
+      await fill(wrapper, { email: "anna@example.com", password: "x", password_confirm: "x" });
+      expect(wrapper.find("[role=alert]").text()).toBe("Check the fields below.");
+      const fieldText = (name) => wrapper.find(`input[name=${name}]`).element.closest("label").textContent;
+      expect(fieldText("email")).toContain("A user with that email address already exists.");
+      expect(fieldText("password")).toContain("This password is too common.");
+      expect(fieldText("is_staff")).toContain("Must be a valid boolean.");
+      expect(router.currentRoute.value.name).toBe("user-new");
+    });
+
+    it("shows a generic error when saving fails", async () => {
+      mockFetch({ "GET /api/auth/me/": [200, ADMIN], "POST /api/users/": [500, {}] });
+      const { wrapper } = await mountAt("/users/new");
+      await fill(wrapper, { email: "luca@example.com", password: "x", password_confirm: "x" });
+      expect(wrapper.find("[role=alert]").text()).toBe("Unable to save the user: try again later.");
+      expect(wrapper.find("button[type=submit]").attributes("disabled")).toBeUndefined();
+    });
+
+    it("shows an error when the user cannot be loaded", async () => {
+      mockFetch({ "GET /api/auth/me/": [200, ADMIN] });
+      const { wrapper } = await mountAt("/users/9");
+      expect(wrapper.find("[role=alert]").text()).toBe("Unable to load the user.");
+      expect(wrapper.find("form").exists()).toBe(false);
     });
   });
 });

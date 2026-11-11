@@ -1,10 +1,11 @@
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, update_session_auth_hash
 from django.db import connection, transaction
 from django.utils.decorators import method_decorator
+from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
-from rest_framework.exceptions import NotFound
-from rest_framework.generics import ListAPIView
+from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
@@ -69,7 +70,24 @@ class MeView(APIView):
         return Response(UserSerializer(request.user).data)
 
 
-class UserListView(ListAPIView):
+class UserListView(ListCreateAPIView):
     permission_classes = [IsAdminUser]
     queryset = User.objects.order_by("email")
     serializer_class = AdminUserSerializer
+
+
+class UserDetailView(RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAdminUser]
+    queryset = User.objects.all()
+    serializer_class = AdminUserSerializer
+
+    def perform_update(self, serializer):
+        user = serializer.save()
+        # Changing the own password would otherwise end the current session
+        if user == self.request.user:
+            update_session_auth_hash(self.request, user)
+
+    def perform_destroy(self, instance):
+        if instance == self.request.user:
+            raise PermissionDenied(_("You cannot delete your own account."))
+        instance.delete()
