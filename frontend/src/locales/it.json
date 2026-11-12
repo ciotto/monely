@@ -6,7 +6,8 @@
     "dashboard": "Dashboard",
     "language": "Lingua",
     "logout": "Esci",
-    "users": "Utenti"
+    "users": "Utenti",
+    "wallets": "Portafogli"
   },
   "login": {
     "title": "Accedi",
@@ -39,6 +40,51 @@
   "dashboard": {
     "title": "Dashboard",
     "empty": "Nessun dato ancora: aggiungi un portafoglio per iniziare."
+  },
+  "wallets": {
+    "title": "Portafogli",
+    "loading": "Caricamento…",
+    "showArchived": "Mostra i portafogli archiviati",
+    "empty": "Nessun portafoglio ancora: crea il primo.",
+    "columns": {
+      "name": "Nome",
+      "currency": "Valuta",
+      "owners": "Titolari",
+      "status": "Stato",
+      "actions": "Azioni"
+    },
+    "statuses": {
+      "active": "Attivo",
+      "archived": "Archiviato"
+    },
+    "new": "Nuovo portafoglio",
+    "edit": "Modifica",
+    "archive": "Archivia",
+    "restore": "Ripristina",
+    "errors": {
+      "load": "Impossibile caricare i portafogli: riprova più tardi.",
+      "archive": "Impossibile aggiornare il portafoglio: riprova più tardi."
+    },
+    "form": {
+      "titleNew": "Nuovo portafoglio",
+      "titleEdit": "Modifica portafoglio",
+      "fields": {
+        "name": "Nome",
+        "currency": "Valuta",
+        "owners": "Titolari",
+        "is_archived": "Archiviato"
+      },
+      "currencyHint": "Codice ISO 4217 di tre lettere, ad esempio EUR. Non potrà essere cambiato.",
+      "currencyFixed": "La valuta non può essere cambiata.",
+      "save": "Salva",
+      "cancel": "Annulla",
+      "errors": {
+        "load": "Impossibile caricare il portafoglio.",
+        "noOwners": "Scegli almeno un titolare.",
+        "invalid": "Controlla i campi qui sotto.",
+        "generic": "Impossibile salvare il portafoglio: riprova più tardi."
+      }
+    }
   },
   "users": {
     "title": "Utenti",

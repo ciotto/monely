@@ -23,6 +23,9 @@ async function signOut() {
           <RouterLink to="/" class="hover:text-brand" active-class="font-semibold text-brand">
             {{ $t("nav.dashboard") }}
           </RouterLink>
+          <RouterLink :to="{ name: 'wallets' }" class="hover:text-brand" active-class="font-semibold text-brand">
+            {{ $t("nav.wallets") }}
+          </RouterLink>
           <RouterLink
             v-if="auth.user.is_staff"
             :to="{ name: 'users' }"

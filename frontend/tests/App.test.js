@@ -46,6 +46,7 @@ describe("App", () => {
       expect(wrapper.find("h1").text()).toBe("Dashboard");
       expect(wrapper.text()).toContain("No data yet");
       expect(wrapper.find("header").text()).toContain("anna@example.com");
+      expect(wrapper.find("header").text()).toContain("Wallets");
       expect(wrapper.find("header").text()).not.toContain("Users");
     });
 
@@ -411,6 +412,222 @@ describe("App", () => {
       mockFetch({ "GET /api/auth/me/": [200, ADMIN] });
       const { wrapper } = await mountAt("/users/9");
       expect(wrapper.find("[role=alert]").text()).toBe("Unable to load the user.");
+      expect(wrapper.find("form").exists()).toBe(false);
+    });
+  });
+
+  describe("wallets", () => {
+    const OWNERS = [
+      { id: 1, email: "anna@example.com", first_name: "Anna", last_name: "Bianchi" },
+      { id: 2, email: "luca@example.com", first_name: "", last_name: "" },
+    ];
+    const WALLETS = [
+      { id: 1, name: "Bank", currency: "EUR", owners: [1, 2], is_archived: false },
+      { id: 2, name: "Old card", currency: "USD", owners: [2], is_archived: true },
+    ];
+
+    const rows = (wrapper) => wrapper.findAll("tbody tr").map((row) => row.findAll("td").map((cell) => cell.text()));
+
+    it("lists the active wallets from the header link", async () => {
+      mockFetch({
+        "GET /api/auth/me/": [200, USER],
+        "GET /api/wallets/": [200, WALLETS],
+        "GET /api/wallets/owners/": [200, OWNERS],
+      });
+      const { wrapper, router } = await mountAt("/");
+      await wrapper.find("header a[href='/wallets']").trigger("click");
+      await flushPromises();
+      expect(router.currentRoute.value.name).toBe("wallets");
+      expect(wrapper.find("h1").text()).toBe("Wallets");
+      expect(rows(wrapper)).toEqual([["Bank", "EUR", "Anna Bianchi, luca@example.com", "Active", "EditArchive"]]);
+
+      await wrapper.find("input[name=show_archived]").setChecked(true);
+      expect(rows(wrapper)[1]).toEqual(["Old card", "USD", "luca@example.com", "Archived", "EditRestore"]);
+    });
+
+    it("shows a message when there are no wallets", async () => {
+      mockFetch({
+        "GET /api/auth/me/": [200, USER],
+        "GET /api/wallets/": [200, [WALLETS[1]]],
+        "GET /api/wallets/owners/": [200, OWNERS],
+      });
+      const { wrapper } = await mountAt("/wallets");
+      expect(wrapper.text()).toContain("No wallets yet: create the first one.");
+      expect(wrapper.find("table").exists()).toBe(false);
+    });
+
+    it("shows a loading message while fetching", async () => {
+      mockFetch({ "GET /api/auth/me/": [200, USER] });
+      fetch.mockImplementation(async (url) =>
+        url === "/api/auth/me/" ? { ok: true, status: 200, json: async () => USER } : new Promise(() => {}),
+      );
+      const { wrapper } = await mountAt("/wallets");
+      expect(wrapper.text()).toContain("Loading…");
+    });
+
+    it("shows an error when the wallets cannot be loaded", async () => {
+      mockFetch({ "GET /api/auth/me/": [200, USER], "GET /api/wallets/owners/": [200, OWNERS] });
+      const { wrapper } = await mountAt("/wallets");
+      expect(wrapper.find("[role=alert]").text()).toBe("Unable to load the wallets: try again later.");
+    });
+
+    it("archives and restores a wallet", async () => {
+      const fetch = mockFetch({
+        "GET /api/auth/me/": [200, USER],
+        "GET /api/wallets/": [200, structuredClone(WALLETS)],
+        "GET /api/wallets/owners/": [200, OWNERS],
+        "PATCH /api/wallets/1/": [200, { ...WALLETS[0], is_archived: true }],
+      });
+      const { wrapper } = await mountAt("/wallets");
+      await wrapper.find("tbody button").trigger("click");
+      await flushPromises();
+      expect(fetch).toHaveBeenLastCalledWith(
+        "/api/wallets/1/",
+        expect.objectContaining({ method: "PATCH", body: JSON.stringify({ is_archived: true }) }),
+      );
+      expect(wrapper.text()).toContain("No wallets yet");
+
+      await wrapper.find("input[name=show_archived]").setChecked(true);
+      await wrapper.find("tbody button").trigger("click");
+      await flushPromises();
+      expect(JSON.parse(fetch.mock.lastCall[1].body)).toEqual({ is_archived: false });
+    });
+
+    it("shows an error when archiving fails", async () => {
+      mockFetch({
+        "GET /api/auth/me/": [200, USER],
+        "GET /api/wallets/": [200, structuredClone(WALLETS)],
+        "GET /api/wallets/owners/": [200, OWNERS],
+        "PATCH /api/wallets/1/": [500, {}],
+      });
+      const { wrapper } = await mountAt("/wallets");
+      await wrapper.find("tbody button").trigger("click");
+      await flushPromises();
+      expect(wrapper.find("[role=alert]").text()).toBe("Unable to update the wallet: try again later.");
+      expect(rows(wrapper)[0][3]).toBe("Active");
+    });
+  });
+
+  describe("wallet form", () => {
+    const OWNERS = [
+      { id: 1, email: "anna@example.com", first_name: "Anna", last_name: "" },
+      { id: 2, email: "luca@example.com", first_name: "", last_name: "" },
+    ];
+
+    async function fill(wrapper, values) {
+      for (const [name, value] of Object.entries(values)) {
+        await wrapper.find(`input[name=${name}]`).setValue(value);
+      }
+    }
+
+    async function submit(wrapper) {
+      await wrapper.find("form").trigger("submit");
+      await flushPromises();
+    }
+
+    it("creates a wallet owned by the current user", async () => {
+      const fetch = mockFetch({
+        "GET /api/auth/me/": [200, USER],
+        "GET /api/wallets/": [200, []],
+        "GET /api/wallets/owners/": [200, OWNERS],
+        "POST /api/wallets/": [201, {}],
+      });
+      const { wrapper, router } = await mountAt("/wallets");
+      await wrapper.find("a[href='/wallets/new']").trigger("click");
+      await flushPromises();
+      expect(wrapper.find("h1").text()).toBe("New wallet");
+      expect(wrapper.find("input[name=currency]").element.value).toBe("EUR");
+      expect(wrapper.find("input[name=is_archived]").exists()).toBe(false);
+      const owners = wrapper.findAll("input[name=owners]");
+      expect(owners.map((input) => input.element.checked)).toEqual([true, false]);
+      expect(wrapper.find("fieldset").text()).toContain("luca@example.com");
+
+      await fill(wrapper, { name: "Joint account", currency: "usd" });
+      await owners[1].setChecked(true);
+      await submit(wrapper);
+      const [url, { method, body }] = fetch.mock.calls.at(-3);
+      expect([url, method]).toEqual(["/api/wallets/", "POST"]);
+      expect(JSON.parse(body)).toEqual({ name: "Joint account", currency: "USD", owners: [1, 2], is_archived: false });
+      expect(router.currentRoute.value.name).toBe("wallets");
+    });
+
+    it("edits a wallet without changing the currency", async () => {
+      const wallet = { id: 3, name: "Bank", currency: "EUR", owners: [2], is_archived: false };
+      const fetch = mockFetch({
+        "GET /api/auth/me/": [200, USER],
+        "GET /api/wallets/owners/": [200, OWNERS],
+        "GET /api/wallets/3/": [200, wallet],
+        "PATCH /api/wallets/3/": [200, wallet],
+        "GET /api/wallets/": [200, [wallet]],
+      });
+      const { wrapper, router } = await mountAt("/wallets/3");
+      expect(wrapper.find("h1").text()).toBe("Edit wallet");
+      expect(wrapper.find("input[name=name]").element.value).toBe("Bank");
+      expect(wrapper.find("input[name=currency]").attributes("disabled")).toBeDefined();
+      expect(wrapper.text()).toContain("The currency cannot be changed.");
+      expect(wrapper.findAll("input[name=owners]").map((input) => input.element.checked)).toEqual([false, true]);
+
+      await fill(wrapper, { name: "Main bank" });
+      await wrapper.find("input[name=is_archived]").setChecked(true);
+      await submit(wrapper);
+      const [url, { method, body }] = fetch.mock.calls.at(-3);
+      expect([url, method]).toEqual(["/api/wallets/3/", "PATCH"]);
+      expect(JSON.parse(body)).toEqual({ name: "Main bank", owners: [2], is_archived: true });
+      expect(router.currentRoute.value.name).toBe("wallets");
+    });
+
+    it("requires at least one owner", async () => {
+      const fetch = mockFetch({ "GET /api/auth/me/": [200, USER], "GET /api/wallets/owners/": [200, OWNERS] });
+      const { wrapper } = await mountAt("/wallets/new");
+      await fill(wrapper, { name: "Cash" });
+      await wrapper.find("input[name=owners]").setChecked(false);
+      await submit(wrapper);
+      expect(wrapper.find("[role=alert]").text()).toBe("Choose at least one owner.");
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("shows the field errors returned by the backend", async () => {
+      mockFetch({
+        "GET /api/auth/me/": [200, USER],
+        "GET /api/wallets/owners/": [200, OWNERS],
+        "POST /api/wallets/": [
+          400,
+          {
+            name: ["Ensure this field has no more than 100 characters."],
+            currency: ["Enter a three-letter ISO 4217 currency code, e.g. EUR."],
+            owners: ["Invalid pk."],
+          },
+        ],
+      });
+      const { wrapper, router } = await mountAt("/wallets/new");
+      await fill(wrapper, { name: "Cash", currency: "E1R" });
+      await submit(wrapper);
+      expect(wrapper.find("[role=alert]").text()).toBe("Check the fields below.");
+      expect(wrapper.find("input[name=name]").element.closest("label").textContent).toContain("no more than 100");
+      expect(wrapper.find("input[name=currency]").element.closest("label").textContent).toContain(
+        "Enter a three-letter ISO 4217 currency code",
+      );
+      expect(wrapper.find("fieldset").text()).toContain("Invalid pk.");
+      expect(wrapper.find("button[type=submit]").attributes("disabled")).toBeUndefined();
+      expect(router.currentRoute.value.name).toBe("wallet-new");
+    });
+
+    it("shows a generic error when saving fails", async () => {
+      mockFetch({
+        "GET /api/auth/me/": [200, USER],
+        "GET /api/wallets/owners/": [200, OWNERS],
+        "POST /api/wallets/": [500, {}],
+      });
+      const { wrapper } = await mountAt("/wallets/new");
+      await fill(wrapper, { name: "Cash" });
+      await submit(wrapper);
+      expect(wrapper.find("[role=alert]").text()).toBe("Unable to save the wallet: try again later.");
+    });
+
+    it("shows an error when the wallet cannot be loaded", async () => {
+      mockFetch({ "GET /api/auth/me/": [200, USER], "GET /api/wallets/owners/": [200, OWNERS] });
+      const { wrapper } = await mountAt("/wallets/9");
+      expect(wrapper.find("[role=alert]").text()).toBe("Unable to load the wallet.");
       expect(wrapper.find("form").exists()).toBe(false);
     });
   });

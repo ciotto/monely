@@ -29,3 +29,8 @@ class TestUserAdmin:
 
         assert response.status_code == 302
         assert User.objects.get(email="new@example.com").check_password("Zx9!long-pass")
+
+    def test_wallet_changelist(self, admin_client):
+        response = admin_client.get(reverse("admin:core_wallet_changelist"))
+
+        assert response.status_code == 200

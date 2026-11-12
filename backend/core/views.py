@@ -5,14 +5,26 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
 from rest_framework.exceptions import NotFound, PermissionDenied
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.generics import (
+    ListAPIView,
+    ListCreateAPIView,
+    RetrieveUpdateAPIView,
+    RetrieveUpdateDestroyAPIView,
+)
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from core.models import User
-from core.serializers import AdminUserSerializer, LoginSerializer, SetupSerializer, UserSerializer
+from core.models import User, Wallet
+from core.serializers import (
+    AdminUserSerializer,
+    LoginSerializer,
+    OwnerSerializer,
+    SetupSerializer,
+    UserSerializer,
+    WalletSerializer,
+)
 
 
 class LoginView(APIView):
@@ -91,3 +103,21 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
         if instance == self.request.user:
             raise PermissionDenied(_("You cannot delete your own account."))
         instance.delete()
+
+
+class WalletListView(ListCreateAPIView):
+    queryset = Wallet.objects.prefetch_related("owners")
+    serializer_class = WalletSerializer
+
+
+# Wallets are archived instead of deleted
+class WalletDetailView(RetrieveUpdateAPIView):
+    queryset = Wallet.objects.prefetch_related("owners")
+    serializer_class = WalletSerializer
+
+
+class WalletOwnerListView(ListAPIView):
+    """The users that can be chosen as wallet owners; the user management is reserved to the admins."""
+
+    queryset = User.objects.order_by("email")
+    serializer_class = OwnerSerializer

@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from core.models import User
+from core.models import User, Wallet
 
 
 def check_password(password, **user_fields):
@@ -19,6 +19,30 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ("id", "email", "first_name", "last_name", "is_staff")
+
+
+class OwnerSerializer(serializers.ModelSerializer):
+    """The users that can own a wallet, visible to everyone."""
+
+    class Meta:
+        model = User
+        fields = ("id", "email", "first_name", "last_name")
+
+
+class WalletSerializer(serializers.ModelSerializer):
+    owners = serializers.PrimaryKeyRelatedField(many=True, allow_empty=False, queryset=User.objects.all())
+
+    class Meta:
+        model = Wallet
+        fields = ("id", "name", "currency", "owners", "is_archived", "created_at")
+        read_only_fields = ("created_at",)
+
+    def get_fields(self):
+        fields = super().get_fields()
+        # Amounts are never converted, so the currency is fixed once the wallet exists
+        if self.instance is not None:
+            fields["currency"].read_only = True
+        return fields
 
 
 class AdminUserSerializer(serializers.ModelSerializer):

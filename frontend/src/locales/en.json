@@ -6,7 +6,8 @@
     "dashboard": "Dashboard",
     "language": "Language",
     "logout": "Log out",
-    "users": "Users"
+    "users": "Users",
+    "wallets": "Wallets"
   },
   "login": {
     "title": "Log in",
@@ -39,6 +40,51 @@
   "dashboard": {
     "title": "Dashboard",
     "empty": "No data yet: add a wallet to get started."
+  },
+  "wallets": {
+    "title": "Wallets",
+    "loading": "Loading…",
+    "showArchived": "Show archived wallets",
+    "empty": "No wallets yet: create the first one.",
+    "columns": {
+      "name": "Name",
+      "currency": "Currency",
+      "owners": "Owners",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "statuses": {
+      "active": "Active",
+      "archived": "Archived"
+    },
+    "new": "New wallet",
+    "edit": "Edit",
+    "archive": "Archive",
+    "restore": "Restore",
+    "errors": {
+      "load": "Unable to load the wallets: try again later.",
+      "archive": "Unable to update the wallet: try again later."
+    },
+    "form": {
+      "titleNew": "New wallet",
+      "titleEdit": "Edit wallet",
+      "fields": {
+        "name": "Name",
+        "currency": "Currency",
+        "owners": "Owners",
+        "is_archived": "Archived"
+      },
+      "currencyHint": "Three-letter ISO 4217 code, e.g. EUR. It cannot be changed later.",
+      "currencyFixed": "The currency cannot be changed.",
+      "save": "Save",
+      "cancel": "Cancel",
+      "errors": {
+        "load": "Unable to load the wallet.",
+        "noOwners": "Choose at least one owner.",
+        "invalid": "Check the fields below.",
+        "generic": "Unable to save the wallet: try again later."
+      }
+    }
   },
   "users": {
     "title": "Users",
