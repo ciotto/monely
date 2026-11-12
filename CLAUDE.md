@@ -7,7 +7,7 @@ Guide for Claude Code on this repository. Vision, data model and roadmap are in 
 Monely: an app for managing family finances (wallets, transactions, monthly dashboard).
 
 - Backend Django 6.1 on Python 3.14, PostgreSQL 17 via docker compose.
-- Frontend in `frontend/`: Vue 3 + Vite + Tailwind 4 SPA, vue-router, vue-i18n; Node >= 22.12 (`frontend/.nvmrc`). Chart.js will come with the dashboard (M4).
+- Frontend in `frontend/`: Vue 3 + Vite + Tailwind 4 SPA, vue-router, vue-i18n, Chart.js (wrapped by `components/BarChart.vue`; mocked in the tests, jsdom has no canvas); Node >= 22.12 (`frontend/.nvmrc`).
 - MIT license.
 
 ## Structure

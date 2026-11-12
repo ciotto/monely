@@ -26,7 +26,16 @@ describe("App", () => {
 
   describe("logged in", () => {
     beforeEach(() => {
-      mockFetch({ "GET /api/auth/me/": [200, USER], "POST /api/auth/logout/": [204] });
+      mockFetch({
+        "GET /api/auth/me/": [200, USER],
+        "POST /api/auth/logout/": [204],
+        "GET /api/wallets/": [200, []],
+        "GET /api/categories/": [200, []],
+        "GET /api/dashboard/": [
+          200,
+          { month: "2026-11", previous_month: "2026-10", previous_year: "2025-11", currencies: [], wallets: [] },
+        ],
+      });
     });
 
     it("renders the dashboard", async () => {
@@ -132,7 +141,8 @@ describe("App", () => {
       expect(wrapper.find("h1").text()).toBe("Welcome to Monely");
 
       await submitSetup(wrapper);
-      expect(JSON.parse(fetch.mock.lastCall[1].body)).toEqual(DATA);
+      const [, { body }] = fetch.mock.calls.find(([url, { method }]) => url === "/api/setup/" && method === "POST");
+      expect(JSON.parse(body)).toEqual(DATA);
       expect(router.currentRoute.value.name).toBe("dashboard");
       expect(wrapper.find("header").text()).toContain("anna@example.com");
     });

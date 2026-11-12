@@ -42,7 +42,44 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "empty": "No data yet: add a wallet to get started."
+    "loading": "Loading…",
+    "empty": "No data yet: add a wallet to get started.",
+    "createWallet": "Create a wallet",
+    "month": "Month",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "wallet": "Wallet",
+    "allWallets": "All wallets",
+    "tiles": {
+      "income": "Income",
+      "expenses": "Expenses",
+      "net": "Balance"
+    },
+    "byCategory": "By category",
+    "kind": "Show",
+    "kinds": {
+      "expenses": "Expenses",
+      "income": "Income",
+      "net": "Balance"
+    },
+    "noData": {
+      "expenses": "No expenses in this month.",
+      "income": "No income in this month.",
+      "net": "No movements in this month."
+    },
+    "chartLabel": {
+      "expenses": "Expenses by category, compared with the previous month and the same month of the previous year",
+      "income": "Income by category, compared with the previous month and the same month of the previous year",
+      "net": "Balance by category, compared with the previous month and the same month of the previous year"
+    },
+    "columns": {
+      "category": "Category"
+    },
+    "uncategorized": "Uncategorized",
+    "balances": "Balances at the end of {month}",
+    "errors": {
+      "load": "Unable to load the dashboard: try again later."
+    }
   },
   "transactions": {
     "title": "Transactions",

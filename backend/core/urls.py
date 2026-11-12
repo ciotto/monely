@@ -3,6 +3,7 @@ from django.urls import path
 from core.views import (
     CategoryDetailView,
     CategoryListView,
+    DashboardView,
     LoginView,
     LogoutView,
     MeView,
@@ -36,4 +37,5 @@ urlpatterns = [
     path("tags/<int:pk>/", TagDetailView.as_view(), name="tag"),
     path("transactions/", TransactionListView.as_view(), name="transactions"),
     path("transactions/<int:pk>/", TransactionDetailView.as_view(), name="transaction"),
+    path("dashboard/", DashboardView.as_view(), name="dashboard"),
 ]

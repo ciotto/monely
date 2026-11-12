@@ -105,6 +105,13 @@ class TransactionFilterSerializer(serializers.Serializer):
         return attrs
 
 
+class DashboardFilterSerializer(serializers.Serializer):
+    """The query parameters of the dashboard: the month (e.g. 2026-11, the current one by default) and a wallet."""
+
+    month = serializers.DateField(required=False, input_formats=["%Y-%m"])
+    wallet = serializers.PrimaryKeyRelatedField(required=False, queryset=Wallet.objects.all())
+
+
 class AdminUserSerializer(serializers.ModelSerializer):
     """Manages the other users; `is_staff` marks the admins, which are also superusers for the Django admin."""
 

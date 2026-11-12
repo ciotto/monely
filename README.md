@@ -3,7 +3,7 @@
 Monely is a self-hosted web app for managing family finances: wallets, transactions and a monthly dashboard that
 shows where the money goes. It is designed to be used by a single household, with a few users sharing the same data.
 
-> **Status:** early development. M0–M3 are complete (foundations, auth and setup, wallets, transactions); next up is M4.
+> **Status:** early development. M0–M4 are complete (foundations, auth and setup, wallets, transactions, dashboard); next up is M5.
 
 ## Guiding principles
 
@@ -16,7 +16,7 @@ shows where the money goes. It is designed to be used by a single household, wit
 | Area           | Choice                                                                                       |
 |----------------|----------------------------------------------------------------------------------------------|
 | Architecture   | Django REST API + Vue 3 single-page app (Vite, vue-router, vue-i18n)                         |
-| Styling        | Tailwind CSS 4 + Chart.js (charts arrive with the dashboard, M4)                             |
+| Styling        | Tailwind CSS 4 + Chart.js                                                                    |
 | Database       | PostgreSQL, from day one, via docker compose                                                 |
 | Authentication | Django built-in authentication with email login; no 2FA and no django-allauth for now        |
 | Deployment     | docker compose, also for local development; no reverse proxy                                 |
@@ -71,7 +71,7 @@ Tags were initially in this list and have been moved into the data model.
 - [x] **M1 – Auth and setup**: ~~welcome~~setup flow, login/logout, ~~invitations~~, profile management.
 - [x] **M2 – Wallets**: CRUD (archive instead of delete).
 - [x] **M3 – Transactions**: categories, CRUD, list with filters.
-- [ ] **M4 – Dashboard**: aggregations, charts, month selector.
+- [x] **M4 – Dashboard**: aggregations, charts, month selector.
 - [ ] **M5 – Polish for v0.1**: i18n, installation docs, backup/CSV export, published Docker image.
 - [ ] **M6 – v0.2**: transfers between wallets.
 - [ ] **M7 – v0.3**: recurring transactions.

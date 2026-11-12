@@ -1,5 +1,6 @@
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.db import connection, transaction
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -16,10 +17,12 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from core.dashboard import build_dashboard
 from core.models import Category, Tag, Transaction, User, Wallet
 from core.serializers import (
     AdminUserSerializer,
     CategorySerializer,
+    DashboardFilterSerializer,
     LoginSerializer,
     OwnerSerializer,
     SetupSerializer,
@@ -173,3 +176,11 @@ class TransactionListView(ListCreateAPIView):
 class TransactionDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Transaction.objects.prefetch_related("tags")
     serializer_class = TransactionSerializer
+
+
+class DashboardView(APIView):
+    def get(self, request):
+        filters = DashboardFilterSerializer(data=request.query_params)
+        filters.is_valid(raise_exception=True)
+        month = filters.validated_data.get("month", timezone.localdate()).replace(day=1)
+        return Response(build_dashboard(month, filters.validated_data.get("wallet")))

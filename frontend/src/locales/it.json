@@ -42,7 +42,44 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "empty": "Nessun dato ancora: aggiungi un portafoglio per iniziare."
+    "loading": "Caricamento…",
+    "empty": "Nessun dato ancora: aggiungi un portafoglio per iniziare.",
+    "createWallet": "Crea un portafoglio",
+    "month": "Mese",
+    "previousMonth": "Mese precedente",
+    "nextMonth": "Mese successivo",
+    "wallet": "Portafoglio",
+    "allWallets": "Tutti i portafogli",
+    "tiles": {
+      "income": "Entrate",
+      "expenses": "Uscite",
+      "net": "Saldo"
+    },
+    "byCategory": "Per categoria",
+    "kind": "Mostra",
+    "kinds": {
+      "expenses": "Uscite",
+      "income": "Entrate",
+      "net": "Saldo"
+    },
+    "noData": {
+      "expenses": "Nessuna uscita in questo mese.",
+      "income": "Nessuna entrata in questo mese.",
+      "net": "Nessun movimento in questo mese."
+    },
+    "chartLabel": {
+      "expenses": "Uscite per categoria, confrontate con il mese precedente e con lo stesso mese dell'anno precedente",
+      "income": "Entrate per categoria, confrontate con il mese precedente e con lo stesso mese dell'anno precedente",
+      "net": "Saldo per categoria, confrontato con il mese precedente e con lo stesso mese dell'anno precedente"
+    },
+    "columns": {
+      "category": "Categoria"
+    },
+    "uncategorized": "Senza categoria",
+    "balances": "Saldi alla fine di {month}",
+    "errors": {
+      "load": "Impossibile caricare la dashboard: riprova più tardi."
+    }
   },
   "transactions": {
     "title": "Movimenti",
