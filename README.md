@@ -50,6 +50,9 @@ shows where the money goes. It is designed to be used by a single household, wit
 - **Welcome flow**: on first run, create the first user and the first wallet.
 - **Wallets**: create, edit, archive and assign owners.
 - **Transactions**: create, edit and delete transactions; list them with filters (wallet, date range, category, tags).
+- **CSV export/import**: export the filtered transactions to CSV (`date,wallet,currency,amount,description,category,
+  tags,notes`, tags separated by `|`) and import them back; wallets, categories and tags are matched by name
+  (case-insensitive) and created when missing, and a file with any invalid row is rejected as a whole.
 - **Monthly dashboard**: income, expenses and balance for the selected month, breakdown by category, and comparison with
   the same month of the previous year.
 

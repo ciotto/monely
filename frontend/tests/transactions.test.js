@@ -202,6 +202,105 @@ describe("transactions", () => {
     });
   });
 
+  describe("export and import", () => {
+    async function choose(wrapper, file = new File(["date,wallet\n"], "transactions.csv", { type: "text/csv" })) {
+      const input = wrapper.find("input[name=import]");
+      Object.defineProperty(input.element, "files", { value: [file], configurable: true });
+      await input.trigger("change");
+      await flushPromises();
+      return file;
+    }
+
+    it("exports the filtered transactions", async () => {
+      mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, TRANSACTIONS] });
+      const { wrapper } = await mountAt("/transactions");
+      const link = () => wrapper.find("a[download]");
+      expect(link().text()).toBe("Export CSV");
+      expect(link().attributes("href")).toBe("/api/transactions/export/");
+      await wrapper.find("select[name=wallet]").setValue("1");
+      await wrapper.find("input[name=date_from]").setValue("2026-11-01");
+      expect(link().attributes("href")).toBe("/api/transactions/export/?wallet=1&date_from=2026-11-01");
+    });
+
+    it("imports a file and reloads the transactions", async () => {
+      const fetch = mockFetch({
+        ...LOOKUPS,
+        "GET /api/transactions/": [200, TRANSACTIONS],
+        "POST /api/transactions/import/": [201, { transactions: 3, wallets: 1, categories: 0, tags: 2 }],
+      });
+      const { wrapper } = await mountAt("/transactions");
+      const calls = fetch.mock.calls.length;
+      const file = await choose(wrapper);
+      const [, options] = fetch.mock.calls[calls];
+      expect(fetch.mock.calls[calls][0]).toBe("/api/transactions/import/");
+      expect(options.body.get("file")).toBe(file);
+      expect(wrapper.find("input[name=import]").element.value).toBe("");
+      // The new wallets, categories and tags are loaded too
+      expect(fetch.mock.calls.slice(calls + 1).map(([url]) => url)).toEqual([
+        "/api/wallets/",
+        "/api/categories/",
+        "/api/tags/",
+        "/api/transactions/",
+      ]);
+      expect(wrapper.find("[role=status]").text()).toBe(
+        "3 transactions imported. New: 1 wallets, 0 categories, 2 tags.",
+      );
+    });
+
+    it("imports a file without new wallets, categories and tags", async () => {
+      setLocale("it");
+      mockFetch({
+        ...LOOKUPS,
+        "GET /api/transactions/": [200, TRANSACTIONS],
+        "POST /api/transactions/import/": [201, { transactions: 1, wallets: 0, categories: 0, tags: 0 }],
+      });
+      const { wrapper } = await mountAt("/transactions");
+      await choose(wrapper);
+      expect(wrapper.find("[role=status]").text()).toBe("1 movimento importato.");
+    });
+
+    it("shows the invalid rows of the file", async () => {
+      mockFetch({
+        ...LOOKUPS,
+        "GET /api/transactions/": [200, TRANSACTIONS],
+        "POST /api/transactions/import/": [
+          400,
+          { file: ["Row 2, amount: The amount cannot be zero.", "Row 3, wallet: This wallet is archived."] },
+        ],
+      });
+      const { wrapper } = await mountAt("/transactions");
+      await choose(wrapper);
+      const alert = wrapper.find("[role=alert]");
+      expect(alert.find("p").text()).toBe("The file was not imported, fix these rows and try again:");
+      expect(alert.findAll("li").map((item) => item.text())).toEqual([
+        "Row 2, amount: The amount cannot be zero.",
+        "Row 3, wallet: This wallet is archived.",
+      ]);
+      expect(wrapper.find("[role=status]").exists()).toBe(false);
+    });
+
+    it("shows an error when the import fails", async () => {
+      mockFetch({
+        ...LOOKUPS,
+        "GET /api/transactions/": [200, TRANSACTIONS],
+        "POST /api/transactions/import/": [500, {}],
+      });
+      const { wrapper } = await mountAt("/transactions");
+      await choose(wrapper);
+      expect(wrapper.find("[role=alert]").text()).toBe("Unable to import the file: try again later.");
+      expect(wrapper.find("input[name=import]").attributes("disabled")).toBeUndefined();
+    });
+
+    it("disables the import while uploading", async () => {
+      const fetch = mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, TRANSACTIONS] });
+      const { wrapper } = await mountAt("/transactions");
+      fetch.mockImplementation(() => new Promise(() => {}));
+      await choose(wrapper);
+      expect(wrapper.find("input[name=import]").attributes("disabled")).toBeDefined();
+      expect(wrapper.find("label:has(input[name=import])").text()).toBe("Importing…");
+    });
+  });
+
   describe("form", () => {
     async function submit(wrapper) {
       await wrapper.find("form").trigger("submit");

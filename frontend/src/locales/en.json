@@ -89,6 +89,12 @@
     "edit": "Edit",
     "delete": "Delete",
     "confirmDelete": "Delete the transaction {description}?",
+    "export": "Export CSV",
+    "import": "Import CSV",
+    "importing": "Importing…",
+    "imported": "1 transaction imported. | {n} transactions imported.",
+    "importCreated": "New: {wallets} wallets, {categories} categories, {tags} tags.",
+    "importFailed": "The file was not imported, fix these rows and try again:",
     "filters": {
       "wallet": "Wallet",
       "category": "Category",
@@ -107,7 +113,8 @@
     },
     "errors": {
       "load": "Unable to load the transactions: try again later.",
-      "delete": "Unable to delete the transaction: try again later."
+      "delete": "Unable to delete the transaction: try again later.",
+      "import": "Unable to import the file: try again later."
     },
     "form": {
       "titleNew": "New transaction",

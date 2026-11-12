@@ -105,6 +105,10 @@ class TransactionFilterSerializer(serializers.Serializer):
         return attrs
 
 
+class TransactionImportSerializer(serializers.Serializer):
+    file = serializers.FileField()
+
+
 class DashboardFilterSerializer(serializers.Serializer):
     """The query parameters of the dashboard: the month (e.g. 2026-11, the current one by default) and a wallet."""
 

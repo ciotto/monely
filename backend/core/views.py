@@ -1,5 +1,6 @@
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.db import connection, transaction
+from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
@@ -7,11 +8,13 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.generics import (
+    GenericAPIView,
     ListAPIView,
     ListCreateAPIView,
     RetrieveUpdateAPIView,
     RetrieveUpdateDestroyAPIView,
 )
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
@@ -28,10 +31,12 @@ from core.serializers import (
     SetupSerializer,
     TagSerializer,
     TransactionFilterSerializer,
+    TransactionImportSerializer,
     TransactionSerializer,
     UserSerializer,
     WalletSerializer,
 )
+from core.transactions_csv import TransactionImporter, write_transactions
 
 
 class LoginView(APIView):
@@ -150,9 +155,8 @@ class TagDetailView(RetrieveUpdateDestroyAPIView):
     serializer_class = TagSerializer
 
 
-class TransactionListView(ListCreateAPIView):
-    queryset = Transaction.objects.prefetch_related("tags")
-    serializer_class = TransactionSerializer
+class TransactionFilterMixin:
+    """Filters the transactions with the query parameters of the list."""
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -171,6 +175,37 @@ class TransactionListView(ListCreateAPIView):
         if "date_to" in data:
             queryset = queryset.filter(date__lte=data["date_to"])
         return queryset
+
+
+class TransactionListView(TransactionFilterMixin, ListCreateAPIView):
+    queryset = Transaction.objects.prefetch_related("tags")
+    serializer_class = TransactionSerializer
+
+
+class TransactionExportView(TransactionFilterMixin, GenericAPIView):
+    """Downloads the filtered transactions as CSV, oldest first, so an import keeps their order."""
+
+    queryset = Transaction.objects.select_related("wallet", "category").prefetch_related("tags").order_by("date", "id")
+
+    def get(self, request):
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="monely-transactions-{timezone.localdate()}.csv"'
+        # The byte order mark makes spreadsheets read the file as UTF-8
+        response.write("\ufeff")
+        write_transactions(self.get_queryset(), response)
+        return response
+
+
+class TransactionImportView(APIView):
+    """Uploads a CSV file in the export format, creating the missing wallets, categories and tags."""
+
+    parser_classes = [MultiPartParser]
+
+    def post(self, request):
+        serializer = TransactionImportSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        created = TransactionImporter(request.user).run(serializer.validated_data["file"])
+        return Response(created, status=status.HTTP_201_CREATED)
 
 
 class TransactionDetailView(RetrieveUpdateDestroyAPIView):

@@ -43,6 +43,17 @@ describe("apiFetch", () => {
     });
   });
 
+  it("sends form data as is, letting the browser set the content type", async () => {
+    document.cookie = "csrftoken=token";
+    const fetch = mockFetch({ "POST /api/transactions/import/": [201, { transactions: 1 }] });
+    const body = new FormData();
+    expect(await apiFetch("/transactions/import/", { method: "POST", body })).toEqual({ transactions: 1 });
+    expect(fetch.mock.calls[0][1]).toMatchObject({
+      headers: { Accept: "application/json", "Accept-Language": "en", "X-CSRFToken": "token" },
+      body,
+    });
+  });
+
   it("omits the CSRF header when there is no cookie and returns null for empty responses", async () => {
     setLocale("it");
     const fetch = mockFetch({ "POST /api/auth/logout/": [204] });

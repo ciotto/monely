@@ -16,7 +16,9 @@ function getCookie(name) {
 export async function apiFetch(path, { method = "GET", body } = {}) {
   // Django translates its messages (e.g. validation errors) in the UI language
   const headers = { Accept: "application/json", "Accept-Language": i18n.global.locale.value };
-  if (body !== undefined) {
+  // Form data (e.g. file uploads) is sent as multipart, the browser sets its Content-Type with the boundary
+  const isForm = body instanceof FormData;
+  if (body !== undefined && !isForm) {
     headers["Content-Type"] = "application/json";
   }
   // Django requires the CSRF token on unsafe methods for authenticated sessions
@@ -28,7 +30,7 @@ export async function apiFetch(path, { method = "GET", body } = {}) {
     method,
     headers,
     credentials: "same-origin",
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined || isForm ? body : JSON.stringify(body),
   });
   // Empty (204) or non JSON responses (e.g. a proxy error page) have no data
   const data = await response.json().catch(() => null);

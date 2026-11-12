@@ -11,6 +11,8 @@ from core.views import (
     TagDetailView,
     TagListView,
     TransactionDetailView,
+    TransactionExportView,
+    TransactionImportView,
     TransactionListView,
     UserDetailView,
     UserListView,
@@ -36,6 +38,8 @@ urlpatterns = [
     path("tags/", TagListView.as_view(), name="tags"),
     path("tags/<int:pk>/", TagDetailView.as_view(), name="tag"),
     path("transactions/", TransactionListView.as_view(), name="transactions"),
+    path("transactions/export/", TransactionExportView.as_view(), name="transactions-export"),
+    path("transactions/import/", TransactionImportView.as_view(), name="transactions-import"),
     path("transactions/<int:pk>/", TransactionDetailView.as_view(), name="transaction"),
     path("dashboard/", DashboardView.as_view(), name="dashboard"),
 ]

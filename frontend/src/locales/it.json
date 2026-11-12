@@ -89,6 +89,12 @@
     "edit": "Modifica",
     "delete": "Elimina",
     "confirmDelete": "Eliminare il movimento {description}?",
+    "export": "Esporta CSV",
+    "import": "Importa CSV",
+    "importing": "Importazione…",
+    "imported": "1 movimento importato. | {n} movimenti importati.",
+    "importCreated": "Nuovi: {wallets} portafogli, {categories} categorie, {tags} tag.",
+    "importFailed": "Il file non è stato importato, correggi queste righe e riprova:",
     "filters": {
       "wallet": "Portafoglio",
       "category": "Categoria",
@@ -107,7 +113,8 @@
     },
     "errors": {
       "load": "Impossibile caricare i movimenti: riprova più tardi.",
-      "delete": "Impossibile eliminare il movimento: riprova più tardi."
+      "delete": "Impossibile eliminare il movimento: riprova più tardi.",
+      "import": "Impossibile importare il file: riprova più tardi."
     },
     "form": {
       "titleNew": "Nuovo movimento",

@@ -17,8 +17,17 @@ const categories = computed(() => byId(categoryList.value));
 const tags = computed(() => byId(tagList.value));
 // Empty values do not filter
 const filters = reactive({ wallet: "", category: "", tag: "", date_from: "", date_to: "" });
+// The query string of the filters, shared by the list and the export
+const query = computed(() => {
+  const params = new URLSearchParams(Object.entries(filters).filter(([, value]) => value !== "")).toString();
+  return params ? `?${params}` : "";
+});
 const error = ref(null);
 const filterErrors = ref([]);
+// The counts of the created objects after an import, or the errors of the rejected file
+const imported = ref(null);
+const importErrors = ref([]);
+const importing = ref(false);
 
 function byId(list) {
   return Object.fromEntries(list.map((item) => [item.id, item]));
@@ -27,9 +36,8 @@ function byId(list) {
 async function loadTransactions() {
   error.value = null;
   filterErrors.value = [];
-  const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => value !== "")).toString();
   try {
-    transactions.value = await apiFetch(`/transactions/${query ? `?${query}` : ""}`);
+    transactions.value = await apiFetch(`/transactions/${query.value}`);
   } catch (e) {
     // e.g. an end date before the start date
     if (e.status === 400) {
@@ -53,9 +61,7 @@ async function remove(transaction) {
   }
 }
 
-watch(filters, loadTransactions);
-
-onMounted(async () => {
+async function load() {
   try {
     [walletList.value, categoryList.value, tagList.value] = await Promise.all([
       apiFetch("/wallets/"),
@@ -67,22 +73,84 @@ onMounted(async () => {
     return;
   }
   await loadTransactions();
-});
+}
+
+async function importFile(event) {
+  const [file] = event.target.files;
+  // Lets the same file be chosen again, e.g. after fixing it
+  event.target.value = "";
+  error.value = null;
+  imported.value = null;
+  importErrors.value = [];
+  importing.value = true;
+  const body = new FormData();
+  body.append("file", file);
+  try {
+    imported.value = await apiFetch("/transactions/import/", { method: "POST", body });
+  } catch (e) {
+    // e.g. the invalid rows of the file
+    if (e.status === 400) {
+      importErrors.value = Object.values(e.data).flat();
+    } else {
+      error.value = "transactions.errors.import";
+    }
+    return;
+  } finally {
+    importing.value = false;
+  }
+  // The import can also create wallets, categories and tags
+  await load();
+}
+
+watch(filters, loadTransactions);
+
+onMounted(load);
 </script>
 
 <template>
   <section>
     <div class="flex items-center justify-between gap-4">
       <h1 class="text-2xl font-semibold">{{ $t("transactions.title") }}</h1>
-      <RouterLink
-        :to="{ name: 'transaction-new' }"
-        class="rounded bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
-      >
-        {{ $t("transactions.new") }}
-      </RouterLink>
+      <div class="flex flex-wrap items-center justify-end gap-2 text-sm font-medium">
+        <a
+          :href="`/api/transactions/export/${query}`"
+          download
+          class="rounded border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
+        >
+          {{ $t("transactions.export") }}
+        </a>
+        <label
+          class="cursor-pointer rounded border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50 has-disabled:cursor-wait has-disabled:opacity-60"
+        >
+          {{ $t(importing ? "transactions.importing" : "transactions.import") }}
+          <input
+            type="file"
+            name="import"
+            accept=".csv,text/csv"
+            class="sr-only"
+            :disabled="importing"
+            @change="importFile"
+          />
+        </label>
+        <RouterLink :to="{ name: 'transaction-new' }" class="rounded bg-brand px-4 py-2 text-white hover:bg-brand-dark">
+          {{ $t("transactions.new") }}
+        </RouterLink>
+      </div>
     </div>
     <p v-if="error" role="alert" class="mt-6 rounded bg-red-50 px-3 py-2 text-sm text-expense">
       {{ $t(error) }}
+    </p>
+    <div v-if="importErrors.length" role="alert" class="mt-6 rounded bg-red-50 px-3 py-2 text-sm text-expense">
+      <p class="font-medium">{{ $t("transactions.importFailed") }}</p>
+      <ul class="mt-1 list-disc pl-5">
+        <li v-for="message in importErrors" :key="message">{{ message }}</li>
+      </ul>
+    </div>
+    <p v-if="imported" role="status" class="mt-6 rounded bg-green-50 px-3 py-2 text-sm text-income">
+      {{ $t("transactions.imported", imported.transactions) }}
+      <template v-if="imported.wallets || imported.categories || imported.tags">
+        {{ $t("transactions.importCreated", imported) }}
+      </template>
     </p>
     <p v-if="!transactions && !error && !filterErrors.length" class="mt-6 text-slate-500">
       {{ $t("transactions.loading") }}
