@@ -1,22 +1,10 @@
-import { enableAutoUnmount, flushPromises, mount } from "@vue/test-utils";
+import { enableAutoUnmount, flushPromises } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createMemoryHistory } from "vue-router";
 
-import App from "@/App.vue";
 import { auth } from "@/auth";
 import { i18n, setLocale } from "@/i18n";
-import { createAppRouter } from "@/router";
 
-import { ADMIN, mockFetch, USER } from "./helpers";
-
-async function mountAt(path) {
-  const router = createAppRouter(createMemoryHistory());
-  router.push(path);
-  await router.isReady();
-  const wrapper = mount(App, { global: { plugins: [router, i18n] } });
-  await flushPromises();
-  return { wrapper, router };
-}
+import { ADMIN, mockFetch, mountAt, USER } from "./helpers";
 
 async function submitLogin(wrapper) {
   await wrapper.find("input[name=email]").setValue("anna@example.com");
@@ -46,7 +34,7 @@ describe("App", () => {
       expect(wrapper.find("h1").text()).toBe("Dashboard");
       expect(wrapper.text()).toContain("No data yet");
       expect(wrapper.find("header").text()).toContain("anna@example.com");
-      expect(wrapper.find("header").text()).toContain("WalletsCategoriesTags");
+      expect(wrapper.find("header").text()).toContain("TransactionsWalletsCategoriesTags");
       expect(wrapper.find("header").text()).not.toContain("Users");
     });
 

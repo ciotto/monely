@@ -9,6 +9,8 @@ from core.views import (
     SetupView,
     TagDetailView,
     TagListView,
+    TransactionDetailView,
+    TransactionListView,
     UserDetailView,
     UserListView,
     WalletDetailView,
@@ -32,4 +34,6 @@ urlpatterns = [
     path("categories/<int:pk>/", CategoryDetailView.as_view(), name="category"),
     path("tags/", TagListView.as_view(), name="tags"),
     path("tags/<int:pk>/", TagDetailView.as_view(), name="tag"),
+    path("transactions/", TransactionListView.as_view(), name="transactions"),
+    path("transactions/<int:pk>/", TransactionDetailView.as_view(), name="transaction"),
 ]

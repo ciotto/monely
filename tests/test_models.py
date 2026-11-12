@@ -1,7 +1,11 @@
+import datetime
+from decimal import Decimal
+
 import pytest
 from django.db import IntegrityError
+from django.db.models import ProtectedError
 
-from core.models import Category, Tag, User, Wallet
+from core.models import Category, Tag, Transaction, User, Wallet
 
 
 @pytest.mark.django_db
@@ -52,3 +56,29 @@ class TestLabel:
 
         with pytest.raises(IntegrityError):
             model.objects.create(name="groceries")
+
+
+@pytest.mark.django_db
+class TestTransaction:
+    @pytest.fixture
+    def transaction(self):
+        return Transaction.objects.create(
+            wallet=Wallet.objects.create(name="Cash"),
+            date=datetime.date(2026, 11, 12),
+            amount=Decimal("-4.50"),
+            description="Coffee",
+            category=Category.objects.create(name="Bar"),
+        )
+
+    def test_str(self, transaction):
+        assert str(transaction) == "2026-11-12 Coffee -4.50"
+
+    def test_deleting_the_category_keeps_the_transaction(self, transaction):
+        transaction.category.delete()
+
+        transaction.refresh_from_db()
+        assert transaction.category is None
+
+    def test_wallet_with_transactions_cannot_be_deleted(self, transaction):
+        with pytest.raises(ProtectedError):
+            transaction.wallet.delete()

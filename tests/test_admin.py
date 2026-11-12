@@ -40,3 +40,8 @@ class TestUserAdmin:
         response = admin_client.get(reverse(f"admin:core_{model}_changelist"))
 
         assert response.status_code == 200
+
+    def test_transaction_changelist(self, admin_client):
+        response = admin_client.get(reverse("admin:core_transaction_changelist"))
+
+        assert response.status_code == 200

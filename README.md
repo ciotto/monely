@@ -3,7 +3,7 @@
 Monely is a self-hosted web app for managing family finances: wallets, transactions and a monthly dashboard that
 shows where the money goes. It is designed to be used by a single household, with a few users sharing the same data.
 
-> **Status:** early development. M0–M2 are complete (foundations, auth and setup, wallets); next up is M3.
+> **Status:** early development. M0–M3 are complete (foundations, auth and setup, wallets, transactions); next up is M4.
 
 ## Guiding principles
 
@@ -70,7 +70,7 @@ Tags were initially in this list and have been moved into the data model.
 - [x] **M0 – Foundations**: repository, tooling, CI, custom User, Docker, base template with a minimal design system.
 - [x] **M1 – Auth and setup**: ~~welcome~~setup flow, login/logout, ~~invitations~~, profile management.
 - [x] **M2 – Wallets**: CRUD (archive instead of delete).
-- [ ] **M3 – Transactions**: categories, CRUD, list with filters.
+- [x] **M3 – Transactions**: categories, CRUD, list with filters.
 - [ ] **M4 – Dashboard**: aggregations, charts, month selector.
 - [ ] **M5 – Polish for v0.1**: i18n, installation docs, backup/CSV export, published Docker image.
 - [ ] **M6 – v0.2**: transfers between wallets.

@@ -16,7 +16,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from core.models import Category, Tag, User, Wallet
+from core.models import Category, Tag, Transaction, User, Wallet
 from core.serializers import (
     AdminUserSerializer,
     CategorySerializer,
@@ -24,6 +24,8 @@ from core.serializers import (
     OwnerSerializer,
     SetupSerializer,
     TagSerializer,
+    TransactionFilterSerializer,
+    TransactionSerializer,
     UserSerializer,
     WalletSerializer,
 )
@@ -143,3 +145,31 @@ class TagListView(ListCreateAPIView):
 class TagDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+
+
+class TransactionListView(ListCreateAPIView):
+    queryset = Transaction.objects.prefetch_related("tags")
+    serializer_class = TransactionSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        # Repeated parameters (e.g. ?tag=1&tag=2) are read as lists by the serializer
+        filters = TransactionFilterSerializer(data=self.request.query_params)
+        filters.is_valid(raise_exception=True)
+        data = filters.validated_data
+        if "wallet" in data:
+            queryset = queryset.filter(wallet=data["wallet"])
+        if "category" in data:
+            queryset = queryset.filter(category=data["category"])
+        if data.get("tag"):
+            queryset = queryset.filter(tags__in=data["tag"]).distinct()
+        if "date_from" in data:
+            queryset = queryset.filter(date__gte=data["date_from"])
+        if "date_to" in data:
+            queryset = queryset.filter(date__lte=data["date_to"])
+        return queryset
+
+
+class TransactionDetailView(RetrieveUpdateDestroyAPIView):
+    queryset = Transaction.objects.prefetch_related("tags")
+    serializer_class = TransactionSerializer

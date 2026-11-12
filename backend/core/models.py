@@ -117,3 +117,32 @@ class Tag(Label):
     class Meta(Label.Meta):
         verbose_name = _("tag")
         verbose_name_plural = _("tags")
+
+
+class Transaction(models.Model):
+    """A single money movement on a wallet: negative amounts are expenses, positive ones are incomes."""
+
+    # Wallets are archived instead of deleted, so their transactions are never lost
+    wallet = models.ForeignKey(Wallet, on_delete=models.PROTECT, related_name="transactions", verbose_name=_("wallet"))
+    date = models.DateField(_("date"))
+    amount = models.DecimalField(_("amount"), max_digits=12, decimal_places=2)
+    description = models.CharField(_("description"), max_length=200)
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="transactions",
+        verbose_name=_("category"),
+    )
+    tags = models.ManyToManyField(Tag, blank=True, related_name="transactions", verbose_name=_("tags"))
+    notes = models.TextField(_("notes"), blank=True)
+    created_at = models.DateTimeField(_("created at"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("transaction")
+        verbose_name_plural = _("transactions")
+        ordering = ("-date", "-id")
+
+    def __str__(self):
+        return f"{self.date} {self.description} {self.amount}"

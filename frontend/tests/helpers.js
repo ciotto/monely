@@ -1,4 +1,10 @@
+import { flushPromises, mount } from "@vue/test-utils";
 import { vi } from "vitest";
+import { createMemoryHistory } from "vue-router";
+
+import App from "@/App.vue";
+import { i18n } from "@/i18n";
+import { createAppRouter } from "@/router";
 
 export const USER = { id: 1, email: "anna@example.com", first_name: "Anna", last_name: "", is_staff: false };
 export const ADMIN = { ...USER, is_staff: true };
@@ -20,4 +26,13 @@ export function mockFetch(responses) {
   });
   vi.stubGlobal("fetch", fetch);
   return fetch;
+}
+
+export async function mountAt(path) {
+  const router = createAppRouter(createMemoryHistory());
+  router.push(path);
+  await router.isReady();
+  const wrapper = mount(App, { global: { plugins: [router, i18n] } });
+  await flushPromises();
+  return { wrapper, router };
 }

@@ -8,6 +8,7 @@
     "language": "Lingua",
     "logout": "Esci",
     "tags": "Tag",
+    "transactions": "Movimenti",
     "users": "Utenti",
     "wallets": "Portafogli"
   },
@@ -42,6 +43,65 @@
   "dashboard": {
     "title": "Dashboard",
     "empty": "Nessun dato ancora: aggiungi un portafoglio per iniziare."
+  },
+  "transactions": {
+    "title": "Movimenti",
+    "loading": "Caricamento…",
+    "empty": "Nessun movimento corrisponde ai filtri.",
+    "new": "Nuovo movimento",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "confirmDelete": "Eliminare il movimento {description}?",
+    "filters": {
+      "wallet": "Portafoglio",
+      "category": "Categoria",
+      "tag": "Tag",
+      "dateFrom": "Dal",
+      "dateTo": "Al",
+      "all": "Tutti"
+    },
+    "columns": {
+      "date": "Data",
+      "description": "Descrizione",
+      "category": "Categoria",
+      "wallet": "Portafoglio",
+      "amount": "Importo",
+      "actions": "Azioni"
+    },
+    "errors": {
+      "load": "Impossibile caricare i movimenti: riprova più tardi.",
+      "delete": "Impossibile eliminare il movimento: riprova più tardi."
+    },
+    "form": {
+      "titleNew": "Nuovo movimento",
+      "titleEdit": "Modifica movimento",
+      "fields": {
+        "kind": "Tipo",
+        "amount": "Importo",
+        "date": "Data",
+        "description": "Descrizione",
+        "wallet": "Portafoglio",
+        "category": "Categoria",
+        "tags": "Tag",
+        "notes": "Note"
+      },
+      "kinds": {
+        "expense": "Uscita",
+        "income": "Entrata"
+      },
+      "chooseWallet": "Scegli un portafoglio",
+      "noCategory": "Nessuna categoria",
+      "noTags": "Nessun tag.",
+      "noWallets": "I movimenti appartengono a un portafoglio, e non ci sono portafogli attivi.",
+      "createWallet": "Crea un portafoglio",
+      "save": "Salva",
+      "cancel": "Annulla",
+      "errors": {
+        "load": "Impossibile caricare il movimento.",
+        "invalid": "Controlla i campi qui sotto.",
+        "generic": "Impossibile salvare il movimento: riprova più tardi."
+      }
+    }
   },
   "wallets": {
     "title": "Portafogli",

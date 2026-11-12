@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from core.models import Category, Tag, User, Wallet
+from core.models import Category, Tag, Transaction, User, Wallet
 
 
 def check_password(password, **user_fields):
@@ -68,6 +68,41 @@ class CategorySerializer(LabelSerializer):
 class TagSerializer(LabelSerializer):
     class Meta(LabelSerializer.Meta):
         model = Tag
+
+
+class TransactionSerializer(serializers.ModelSerializer):
+    tags = serializers.PrimaryKeyRelatedField(many=True, required=False, queryset=Tag.objects.all())
+
+    class Meta:
+        model = Transaction
+        fields = ("id", "wallet", "date", "amount", "description", "category", "tags", "notes", "created_at")
+        read_only_fields = ("created_at",)
+
+    def validate_wallet(self, value):
+        # Archived wallets keep their transactions, but do not receive new ones
+        if value.is_archived and (self.instance is None or self.instance.wallet != value):
+            raise serializers.ValidationError(_("This wallet is archived."))
+        return value
+
+    def validate_amount(self, value):
+        if value == 0:
+            raise serializers.ValidationError(_("The amount cannot be zero."))
+        return value
+
+
+class TransactionFilterSerializer(serializers.Serializer):
+    """The query parameters that filter the transaction list; tags match when the transaction has any of them."""
+
+    wallet = serializers.PrimaryKeyRelatedField(required=False, queryset=Wallet.objects.all())
+    category = serializers.PrimaryKeyRelatedField(required=False, queryset=Category.objects.all())
+    tag = serializers.PrimaryKeyRelatedField(many=True, required=False, queryset=Tag.objects.all())
+    date_from = serializers.DateField(required=False)
+    date_to = serializers.DateField(required=False)
+
+    def validate(self, attrs):
+        if "date_from" in attrs and "date_to" in attrs and attrs["date_from"] > attrs["date_to"]:
+            raise serializers.ValidationError({"date_to": _("The end date cannot precede the start date.")})
+        return attrs
 
 
 class AdminUserSerializer(serializers.ModelSerializer):
