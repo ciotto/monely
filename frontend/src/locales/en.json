@@ -3,9 +3,11 @@
     "tagline": "Family finances, made simple."
   },
   "nav": {
+    "categories": "Categories",
     "dashboard": "Dashboard",
     "language": "Language",
     "logout": "Log out",
+    "tags": "Tags",
     "users": "Users",
     "wallets": "Wallets"
   },
@@ -85,6 +87,76 @@
         "generic": "Unable to save the wallet: try again later."
       }
     }
+  },
+  "labels": {
+    "loading": "Loading…",
+    "name": "Name",
+    "color": "Color",
+    "icon": "Icon",
+    "add": "Add",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete"
+  },
+  "categories": {
+    "title": "Categories",
+    "intro": "Categories classify the transactions, e.g. groceries, rent or salary.",
+    "placeholder": "New category, e.g. Groceries",
+    "empty": "No categories yet: add the first one.",
+    "confirmDelete": "Delete the category {name}?",
+    "errors": {
+      "load": "Unable to load the categories: try again later.",
+      "save": "Unable to save the category: try again later.",
+      "delete": "Unable to delete the category: try again later."
+    }
+  },
+  "tags": {
+    "title": "Tags",
+    "intro": "Tags are free-form labels for the transactions, e.g. holiday-2026 or car.",
+    "placeholder": "New tag, e.g. holiday-2026",
+    "empty": "No tags yet: add the first one.",
+    "confirmDelete": "Delete the tag {name}?",
+    "errors": {
+      "load": "Unable to load the tags: try again later.",
+      "save": "Unable to save the tag: try again later.",
+      "delete": "Unable to delete the tag: try again later."
+    }
+  },
+  "icons": {
+    "none": "No icon",
+    "shopping-cart": "Groceries",
+    "house": "Home",
+    "lightbulb": "Utilities",
+    "receipt": "Bills",
+    "wifi": "Internet",
+    "smartphone": "Phone",
+    "car": "Car",
+    "fuel": "Fuel",
+    "bus": "Public transport",
+    "plane": "Travel",
+    "utensils": "Restaurants",
+    "coffee": "Coffee",
+    "pill": "Pharmacy",
+    "heart-pulse": "Health",
+    "sparkles": "Personal care",
+    "dumbbell": "Sport",
+    "graduation-cap": "Education",
+    "baby": "Children",
+    "paw-print": "Pets",
+    "shirt": "Clothing",
+    "gift": "Gifts",
+    "clapperboard": "Cinema",
+    "gamepad-2": "Games",
+    "music": "Music",
+    "wrench": "Repairs",
+    "shield": "Insurance",
+    "briefcase": "Work",
+    "banknote": "Salary",
+    "piggy-bank": "Savings",
+    "landmark": "Bank",
+    "trending-up": "Investments",
+    "tag": "Other"
   },
   "users": {
     "title": "Users",

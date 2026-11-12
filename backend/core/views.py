@@ -16,12 +16,14 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from core.models import User, Wallet
+from core.models import Category, Tag, User, Wallet
 from core.serializers import (
     AdminUserSerializer,
+    CategorySerializer,
     LoginSerializer,
     OwnerSerializer,
     SetupSerializer,
+    TagSerializer,
     UserSerializer,
     WalletSerializer,
 )
@@ -121,3 +123,23 @@ class WalletOwnerListView(ListAPIView):
 
     queryset = User.objects.order_by("email")
     serializer_class = OwnerSerializer
+
+
+class CategoryListView(ListCreateAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+
+class CategoryDetailView(RetrieveUpdateDestroyAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+
+class TagListView(ListCreateAPIView):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+
+
+class TagDetailView(RetrieveUpdateDestroyAPIView):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer

@@ -3,9 +3,11 @@
     "tagline": "Le finanze di famiglia, semplici."
   },
   "nav": {
+    "categories": "Categorie",
     "dashboard": "Dashboard",
     "language": "Lingua",
     "logout": "Esci",
+    "tags": "Tag",
     "users": "Utenti",
     "wallets": "Portafogli"
   },
@@ -85,6 +87,76 @@
         "generic": "Impossibile salvare il portafoglio: riprova più tardi."
       }
     }
+  },
+  "labels": {
+    "loading": "Caricamento…",
+    "name": "Nome",
+    "color": "Colore",
+    "icon": "Icona",
+    "add": "Aggiungi",
+    "edit": "Modifica",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "delete": "Elimina"
+  },
+  "categories": {
+    "title": "Categorie",
+    "intro": "Le categorie classificano i movimenti, ad esempio spesa, affitto o stipendio.",
+    "placeholder": "Nuova categoria, ad esempio Spesa",
+    "empty": "Nessuna categoria ancora: aggiungi la prima.",
+    "confirmDelete": "Eliminare la categoria {name}?",
+    "errors": {
+      "load": "Impossibile caricare le categorie: riprova più tardi.",
+      "save": "Impossibile salvare la categoria: riprova più tardi.",
+      "delete": "Impossibile eliminare la categoria: riprova più tardi."
+    }
+  },
+  "tags": {
+    "title": "Tag",
+    "intro": "I tag sono etichette libere per i movimenti, ad esempio vacanze-2026 o auto.",
+    "placeholder": "Nuovo tag, ad esempio vacanze-2026",
+    "empty": "Nessun tag ancora: aggiungi il primo.",
+    "confirmDelete": "Eliminare il tag {name}?",
+    "errors": {
+      "load": "Impossibile caricare i tag: riprova più tardi.",
+      "save": "Impossibile salvare il tag: riprova più tardi.",
+      "delete": "Impossibile eliminare il tag: riprova più tardi."
+    }
+  },
+  "icons": {
+    "none": "Nessuna icona",
+    "shopping-cart": "Spesa",
+    "house": "Casa",
+    "lightbulb": "Utenze",
+    "receipt": "Bollette",
+    "wifi": "Internet",
+    "smartphone": "Telefono",
+    "car": "Auto",
+    "fuel": "Carburante",
+    "bus": "Trasporti pubblici",
+    "plane": "Viaggi",
+    "utensils": "Ristoranti",
+    "coffee": "Caffè",
+    "pill": "Farmacia",
+    "heart-pulse": "Salute",
+    "sparkles": "Cura personale",
+    "dumbbell": "Sport",
+    "graduation-cap": "Istruzione",
+    "baby": "Figli",
+    "paw-print": "Animali",
+    "shirt": "Abbigliamento",
+    "gift": "Regali",
+    "clapperboard": "Cinema",
+    "gamepad-2": "Giochi",
+    "music": "Musica",
+    "wrench": "Riparazioni",
+    "shield": "Assicurazioni",
+    "briefcase": "Lavoro",
+    "banknote": "Stipendio",
+    "piggy-bank": "Risparmi",
+    "landmark": "Banca",
+    "trending-up": "Investimenti",
+    "tag": "Altro"
   },
   "users": {
     "title": "Utenti",

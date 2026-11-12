@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 
-from core.models import User, Wallet
+from core.models import Category, Tag, User, Wallet
 
 
 @admin.register(User)
@@ -28,3 +28,14 @@ class WalletAdmin(admin.ModelAdmin):
     list_filter = ("is_archived", "currency")
     search_fields = ("name",)
     filter_horizontal = ("owners",)
+
+
+@admin.register(Tag)
+class LabelAdmin(admin.ModelAdmin):
+    list_display = ("name", "color")
+    search_fields = ("name",)
+
+
+@admin.register(Category)
+class CategoryAdmin(LabelAdmin):
+    list_display = ("icon", "name", "color")

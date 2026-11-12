@@ -34,3 +34,9 @@ class TestUserAdmin:
         response = admin_client.get(reverse("admin:core_wallet_changelist"))
 
         assert response.status_code == 200
+
+    @pytest.mark.parametrize("model", ["category", "tag"])
+    def test_label_changelist(self, admin_client, model):
+        response = admin_client.get(reverse(f"admin:core_{model}_changelist"))
+
+        assert response.status_code == 200

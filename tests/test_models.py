@@ -1,6 +1,7 @@
 import pytest
+from django.db import IntegrityError
 
-from core.models import User, Wallet
+from core.models import Category, Tag, User, Wallet
 
 
 @pytest.mark.django_db
@@ -38,3 +39,16 @@ class TestWallet:
         assert wallet.currency == "EUR"
         assert not wallet.is_archived
         assert str(wallet) == "Cash"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("model", [Category, Tag])
+class TestLabel:
+    def test_str(self, model):
+        assert str(model.objects.create(name="Groceries")) == "Groceries"
+
+    def test_name_unique_regardless_of_case(self, model):
+        model.objects.create(name="Groceries")
+
+        with pytest.raises(IntegrityError):
+            model.objects.create(name="groceries")

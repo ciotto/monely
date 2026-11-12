@@ -1,10 +1,14 @@
 from django.urls import path
 
 from core.views import (
+    CategoryDetailView,
+    CategoryListView,
     LoginView,
     LogoutView,
     MeView,
     SetupView,
+    TagDetailView,
+    TagListView,
     UserDetailView,
     UserListView,
     WalletDetailView,
@@ -24,4 +28,8 @@ urlpatterns = [
     path("wallets/", WalletListView.as_view(), name="wallets"),
     path("wallets/owners/", WalletOwnerListView.as_view(), name="wallet-owners"),
     path("wallets/<int:pk>/", WalletDetailView.as_view(), name="wallet"),
+    path("categories/", CategoryListView.as_view(), name="categories"),
+    path("categories/<int:pk>/", CategoryDetailView.as_view(), name="category"),
+    path("tags/", TagListView.as_view(), name="tags"),
+    path("tags/<int:pk>/", TagDetailView.as_view(), name="tag"),
 ]

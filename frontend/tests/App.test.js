@@ -46,7 +46,7 @@ describe("App", () => {
       expect(wrapper.find("h1").text()).toBe("Dashboard");
       expect(wrapper.text()).toContain("No data yet");
       expect(wrapper.find("header").text()).toContain("anna@example.com");
-      expect(wrapper.find("header").text()).toContain("Wallets");
+      expect(wrapper.find("header").text()).toContain("WalletsCategoriesTags");
       expect(wrapper.find("header").text()).not.toContain("Users");
     });
 
@@ -629,6 +629,203 @@ describe("App", () => {
       const { wrapper } = await mountAt("/wallets/9");
       expect(wrapper.find("[role=alert]").text()).toBe("Unable to load the wallet.");
       expect(wrapper.find("form").exists()).toBe(false);
+    });
+  });
+
+  describe("categories and tags", () => {
+    const CATEGORIES = [
+      { id: 1, name: "Groceries", color: "#16a34a", icon: "shopping-cart" },
+      { id: 2, name: "Rent", color: "#2563eb", icon: "" },
+    ];
+
+    // The Lucide icon shown inside an element, as its kebab-case name
+    const iconOf = (element) =>
+      element
+        .find("svg")
+        .classes()
+        .find((name) => name.startsWith("lucide-"))
+        .slice("lucide-".length);
+
+    async function pickIcon(wrapper, picker, icon) {
+      await wrapper.find(`button[name=${picker}]`).trigger("click");
+      await wrapper.find(`button[data-icon="${icon}"]`).trigger("click");
+    }
+
+    const names = (wrapper) => wrapper.findAll("li").map((item) => item.find("[data-name]").text());
+
+    async function mountCategories(responses = {}) {
+      const fetch = mockFetch({
+        "GET /api/auth/me/": [200, USER],
+        "GET /api/categories/": [200, structuredClone(CATEGORIES)],
+        ...responses,
+      });
+      return { fetch, ...(await mountAt("/categories")) };
+    }
+
+    async function submit(form) {
+      await form.trigger("submit");
+      await flushPromises();
+    }
+
+    it("lists the categories and the tags from the header links", async () => {
+      mockFetch({
+        "GET /api/auth/me/": [200, USER],
+        "GET /api/categories/": [200, CATEGORIES],
+        "GET /api/tags/": [200, [{ id: 1, name: "car", color: "#d97706" }]],
+      });
+      const { wrapper, router } = await mountAt("/");
+      await wrapper.find("header a[href='/categories']").trigger("click");
+      await flushPromises();
+      expect(router.currentRoute.value.name).toBe("categories");
+      expect(wrapper.find("h1").text()).toBe("Categories");
+      expect(names(wrapper)).toEqual(["Groceries", "Rent"]);
+      const [groceries, rent] = wrapper.findAll("li");
+      expect(iconOf(groceries)).toBe("shopping-cart");
+      expect(groceries.find("[data-icon]").element.style.color).toBe("rgb(22, 163, 74)");
+      expect(rent.find("[data-icon]").exists()).toBe(false);
+      expect(rent.find(".rounded-full").element.style.backgroundColor).toBe("rgb(37, 99, 235)");
+      expect(wrapper.find("button[name=icon]").exists()).toBe(true);
+
+      await wrapper.find("header a[href='/tags']").trigger("click");
+      await flushPromises();
+      expect(wrapper.find("h1").text()).toBe("Tags");
+      expect(names(wrapper)).toEqual(["car"]);
+      expect(wrapper.find("button[name=icon]").exists()).toBe(false);
+      expect(wrapper.find("input[name=color]").element.value).toBe("#16a34a");
+    });
+
+    it("shows a loading message while fetching", async () => {
+      mockFetch({ "GET /api/auth/me/": [200, USER] });
+      fetch.mockImplementation(async (url) =>
+        url === "/api/auth/me/" ? { ok: true, status: 200, json: async () => USER } : new Promise(() => {}),
+      );
+      const { wrapper } = await mountAt("/tags");
+      expect(wrapper.text()).toContain("Loading…");
+    });
+
+    it("adds a tag without icon", async () => {
+      const fetch = mockFetch({
+        "GET /api/auth/me/": [200, USER],
+        "GET /api/tags/": [200, []],
+        "POST /api/tags/": [201, { id: 1, name: "car", color: "#0891b2" }],
+      });
+      const { wrapper } = await mountAt("/tags");
+      expect(wrapper.text()).toContain("No tags yet: add the first one.");
+      await wrapper.find("input[name=color]").setValue("#0891b2");
+      await wrapper.find("input[name=name]").setValue("car");
+      await submit(wrapper.find("form"));
+      expect(JSON.parse(fetch.mock.lastCall[1].body)).toEqual({ name: "car", color: "#0891b2" });
+      expect(names(wrapper)).toEqual(["car"]);
+      expect(wrapper.find("input[name=color]").element.value).toBe("#16a34a");
+    });
+
+    it("shows an error when the items cannot be loaded", async () => {
+      mockFetch({ "GET /api/auth/me/": [200, USER] });
+      const { wrapper } = await mountAt("/tags");
+      expect(wrapper.find("[role=alert]").text()).toBe("Unable to load the tags: try again later.");
+    });
+
+    it("adds a category keeping the list sorted", async () => {
+      const bills = { id: 3, name: "Bills", color: "#dc2626", icon: "lightbulb" };
+      const { wrapper, fetch } = await mountCategories({ "POST /api/categories/": [201, bills] });
+      expect(wrapper.find("input[name=color]").element.value).toBe("#dc2626");
+      await pickIcon(wrapper, "icon", "lightbulb");
+      expect(iconOf(wrapper.find("button[name=icon]"))).toBe("lightbulb");
+      await wrapper.find("input[name=name]").setValue("Bills");
+      await submit(wrapper.find("form"));
+      const [url, { method, body }] = fetch.mock.lastCall;
+      expect([url, method]).toEqual(["/api/categories/", "POST"]);
+      expect(JSON.parse(body)).toEqual({ name: "Bills", color: "#dc2626", icon: "lightbulb" });
+      expect(names(wrapper)).toEqual(["Bills", "Groceries", "Rent"]);
+      expect(wrapper.find("input[name=name]").element.value).toBe("");
+      expect(iconOf(wrapper.find("button[name=icon]"))).toBe("ban");
+      expect(wrapper.find("input[name=color]").element.value).toBe("#d97706");
+    });
+
+    it("shows the name errors returned by the backend", async () => {
+      const { wrapper } = await mountCategories({
+        "POST /api/categories/": [
+          400,
+          { name: ["This name is already in use."], color: ["Enter a hexadecimal color, e.g. #2563eb."] },
+        ],
+      });
+      await wrapper.find("input[name=name]").setValue("rent");
+      await submit(wrapper.find("form"));
+      expect(wrapper.find("form").text()).toContain("This name is already in use.");
+      expect(wrapper.find("form").text()).toContain("Enter a hexadecimal color, e.g. #2563eb.");
+      expect(names(wrapper)).toEqual(["Groceries", "Rent"]);
+    });
+
+    it("shows a generic error when saving fails", async () => {
+      const { wrapper } = await mountCategories({ "POST /api/categories/": [500, {}] });
+      await wrapper.find("input[name=name]").setValue("Bills");
+      await submit(wrapper.find("form"));
+      expect(wrapper.find("[role=alert]").text()).toBe("Unable to save the category: try again later.");
+    });
+
+    it("edits a category", async () => {
+      const taxes = { id: 1, name: "Taxes", color: "#7c3aed", icon: "receipt" };
+      const { wrapper, fetch } = await mountCategories({ "PATCH /api/categories/1/": [200, taxes] });
+      await wrapper.find("li button").trigger("click");
+      expect(wrapper.find("input[name=edit_name]").element.value).toBe("Groceries");
+      expect(wrapper.find("input[name=edit_color]").element.value).toBe("#16a34a");
+      expect(iconOf(wrapper.find("button[name=edit_icon]"))).toBe("shopping-cart");
+
+      await wrapper.find("input[name=edit_name]").setValue("Taxes");
+      await wrapper.find("input[name=edit_color]").setValue("#7c3aed");
+      await pickIcon(wrapper, "edit_icon", "receipt");
+      await submit(wrapper.find("li form"));
+      const [url, { method, body }] = fetch.mock.lastCall;
+      expect([url, method]).toEqual(["/api/categories/1/", "PATCH"]);
+      expect(JSON.parse(body)).toEqual({ name: "Taxes", color: "#7c3aed", icon: "receipt" });
+      expect(names(wrapper)).toEqual(["Rent", "Taxes"]);
+      expect(wrapper.find("input[name=edit_name]").exists()).toBe(false);
+    });
+
+    it("keeps the rename form open on errors and can be cancelled", async () => {
+      const { wrapper } = await mountCategories({
+        "PATCH /api/categories/1/": [400, { name: ["This name is already in use."] }],
+      });
+      await wrapper.find("li button").trigger("click");
+      await wrapper.find("input[name=edit_name]").setValue("rent");
+      await submit(wrapper.find("li form"));
+      expect(wrapper.find("li form").text()).toContain("This name is already in use.");
+
+      await wrapper.findAll("li form button[type=button]").at(-1).trigger("click");
+      expect(wrapper.find("li form").exists()).toBe(false);
+      expect(names(wrapper)).toEqual(["Groceries", "Rent"]);
+    });
+
+    describe("deletion", () => {
+      afterEach(() => vi.restoreAllMocks());
+
+      it("deletes a category after confirmation", async () => {
+        const { wrapper, fetch } = await mountCategories({ "DELETE /api/categories/2/": [204] });
+        const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+        await wrapper.findAll("li")[1].findAll("button")[1].trigger("click");
+        await flushPromises();
+        expect(confirm).toHaveBeenCalledWith("Delete the category Rent?");
+        expect(fetch).toHaveBeenLastCalledWith("/api/categories/2/", expect.objectContaining({ method: "DELETE" }));
+        expect(names(wrapper)).toEqual(["Groceries"]);
+      });
+
+      it("does nothing when the deletion is not confirmed", async () => {
+        const { wrapper, fetch } = await mountCategories();
+        vi.spyOn(window, "confirm").mockReturnValue(false);
+        await wrapper.findAll("li")[1].findAll("button")[1].trigger("click");
+        await flushPromises();
+        expect(fetch).toHaveBeenCalledTimes(2);
+        expect(names(wrapper)).toEqual(["Groceries", "Rent"]);
+      });
+
+      it("shows an error when the deletion fails", async () => {
+        const { wrapper } = await mountCategories({ "DELETE /api/categories/2/": [500, {}] });
+        vi.spyOn(window, "confirm").mockReturnValue(true);
+        await wrapper.findAll("li")[1].findAll("button")[1].trigger("click");
+        await flushPromises();
+        expect(wrapper.find("[role=alert]").text()).toBe("Unable to delete the category: try again later.");
+        expect(names(wrapper)).toEqual(["Groceries", "Rent"]);
+      });
     });
   });
 });

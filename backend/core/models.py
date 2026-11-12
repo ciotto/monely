@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.validators import RegexValidator
 from django.db import models
+from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 
 
@@ -72,3 +73,47 @@ class Wallet(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Label(models.Model):
+    """A name that classifies the transactions; it is unique regardless of the case."""
+
+    name = models.CharField(_("name"), max_length=50)
+    color = models.CharField(
+        _("color"),
+        max_length=7,
+        default="#64748b",
+        validators=[RegexValidator(r"^#[0-9a-fA-F]{6}\Z", _("Enter a hexadecimal color, e.g. #2563eb."))],
+    )
+
+    class Meta:
+        abstract = True
+        ordering = (Lower("name"),)
+        constraints = [models.UniqueConstraint(Lower("name"), name="%(app_label)s_%(class)s_unique_name")]
+
+    def __str__(self):
+        return self.name
+
+
+class Category(Label):
+    """Classifies a transaction (e.g. groceries, rent, salary), for the reports and later the budgets."""
+
+    # The kebab-case name of a Lucide icon (e.g. shopping-cart); the frontend offers a curated subset
+    icon = models.CharField(
+        _("icon"),
+        max_length=50,
+        blank=True,
+        validators=[RegexValidator(r"^[a-z0-9]+(-[a-z0-9]+)*\Z", _("Enter the name of an icon, e.g. shopping-cart."))],
+    )
+
+    class Meta(Label.Meta):
+        verbose_name = _("category")
+        verbose_name_plural = _("categories")
+
+
+class Tag(Label):
+    """A free-form label attached to many transactions (e.g. holiday-2026), orthogonal to the categories."""
+
+    class Meta(Label.Meta):
+        verbose_name = _("tag")
+        verbose_name_plural = _("tags")

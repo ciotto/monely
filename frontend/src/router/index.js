@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 
 import { authGuard } from "@/auth";
 import DashboardView from "@/views/DashboardView.vue";
+import LabelsView from "@/views/LabelsView.vue";
 import LoginView from "@/views/LoginView.vue";
 import SetupView from "@/views/SetupView.vue";
 import UserFormView from "@/views/UserFormView.vue";
@@ -16,6 +17,8 @@ const routes = [
   { path: "/wallets", name: "wallets", component: WalletsView },
   { path: "/wallets/new", name: "wallet-new", component: WalletFormView },
   { path: "/wallets/:id(\\d+)", name: "wallet-edit", component: WalletFormView },
+  { path: "/categories", name: "categories", component: LabelsView, props: { resource: "categories", withIcon: true } },
+  { path: "/tags", name: "tags", component: LabelsView, props: { resource: "tags" } },
   { path: "/users", name: "users", component: UsersView, meta: { admin: true } },
   { path: "/users/new", name: "user-new", component: UserFormView, meta: { admin: true } },
   { path: "/users/:id(\\d+)", name: "user-edit", component: UserFormView, meta: { admin: true } },
