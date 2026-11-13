@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "@/auth";
 import { setLocale } from "@/i18n";
 
-import { mockFetch, mountAt, USER } from "./helpers";
+import { mockFetch, mountAt, page, USER } from "./helpers";
 
 // jsdom has no canvas: the charts record their configuration instead of drawing
 const charts = vi.hoisted(() => []);
@@ -298,7 +298,7 @@ describe("dashboard", () => {
   });
 
   it("destroys the chart when leaving the page", async () => {
-    mockFetch({ ...LOOKUPS, "GET /api/dashboard/": [200, DASHBOARD], "GET /api/transactions/": [200, []] });
+    mockFetch({ ...LOOKUPS, "GET /api/dashboard/": [200, DASHBOARD], "GET /api/transactions/": [200, page([])] });
     const { wrapper } = await mountAt("/");
     await wrapper.find("header a[href='/transactions']").trigger("click");
     await flushPromises();

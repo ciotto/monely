@@ -87,6 +87,7 @@
   "transactions": {
     "title": "Movimenti",
     "loading": "Caricamento…",
+    "loadMore": "Carica altri",
     "empty": "Nessun movimento corrisponde ai filtri.",
     "new": "Nuovo movimento",
     "newTransfer": "Nuovo trasferimento",

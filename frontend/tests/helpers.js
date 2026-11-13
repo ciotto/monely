@@ -28,6 +28,11 @@ export function mockFetch(responses) {
   return fetch;
 }
 
+// A page of a paginated list; `next` is the URL of the following page, null on the last one
+export function page(results, next = null) {
+  return { count: results.length, next, previous: null, results };
+}
+
 export async function mountAt(path, options = {}) {
   const router = createAppRouter(createMemoryHistory());
   router.push(path);

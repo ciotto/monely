@@ -259,7 +259,7 @@ class TestTransferTransactions:
 
         response = user_client.get(reverse("api:transactions"))
 
-        assert [(item["wallet"], item["amount"], item["transfer"]) for item in response.json()] == [
+        assert [(item["wallet"], item["amount"], item["transfer"]) for item in response.json()["results"]] == [
             (cash.pk, "50.00", transfer.pk),
             (bank.pk, "-50.00", transfer.pk),
         ]

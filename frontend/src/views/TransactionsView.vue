@@ -12,6 +12,9 @@ const { t, locale } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const transactions = ref(null);
+// The list comes in pages: more transactions match the filters than the ones shown
+const hasMore = ref(false);
+const loadingMore = ref(false);
 // The lists keep the backend order (by name), the maps by id show the names of the related objects
 const walletList = ref([]);
 const categoryList = ref([]);
@@ -50,7 +53,9 @@ async function loadTransactions() {
   error.value = null;
   filterErrors.value = [];
   try {
-    transactions.value = await apiFetch(`/transactions/${query.value}`);
+    const page = await apiFetch(`/transactions/${query.value}`);
+    transactions.value = page.results;
+    hasMore.value = page.next !== null;
   } catch (e) {
     // e.g. an end date before the start date
     if (e.status === 400) {
@@ -58,6 +63,22 @@ async function loadTransactions() {
     } else {
       error.value = "transactions.errors.load";
     }
+  }
+}
+
+// The next page starts after the rows already shown, so the deleted ones do not make it skip any transaction
+async function loadMore() {
+  error.value = null;
+  loadingMore.value = true;
+  const params = new URLSearchParams({ ...filterQuery.value, offset: transactions.value.length });
+  try {
+    const page = await apiFetch(`/transactions/?${params}`);
+    transactions.value = [...transactions.value, ...page.results];
+    hasMore.value = page.next !== null;
+  } catch {
+    error.value = "transactions.errors.load";
+  } finally {
+    loadingMore.value = false;
   }
 }
 
@@ -325,6 +346,17 @@ onMounted(load);
             </tr>
           </tbody>
         </table>
+      </div>
+      <div v-if="hasMore" class="mt-4 text-center">
+        <button
+          type="button"
+          name="load-more"
+          :disabled="loadingMore"
+          class="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60"
+          @click="loadMore"
+        >
+          {{ $t(loadingMore ? "transactions.loading" : "transactions.loadMore") }}
+        </button>
       </div>
     </template>
   </section>

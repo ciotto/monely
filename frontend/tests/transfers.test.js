@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "@/auth";
 import { setLocale } from "@/i18n";
 
-import { mockFetch, mountAt, USER } from "./helpers";
+import { mockFetch, mountAt, page, USER } from "./helpers";
 
 const WALLETS = [
   { id: 1, name: "Bank", currency: "EUR", owners: [1], is_archived: false },
@@ -82,7 +82,7 @@ describe("transfers", () => {
     const rows = (wrapper) => wrapper.findAll("tbody tr").map((row) => row.findAll("td").map((cell) => cell.text()));
 
     it("shows the transactions of a transfer, linked to the transfer", async () => {
-      mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, TRANSACTIONS] });
+      mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, page(TRANSACTIONS)] });
       const { wrapper } = await mountAt("/transactions");
       expect(rows(wrapper).map((row) => row.slice(1, 5))).toEqual([
         ["ATM", "Transfer", "Cash", "+€50.00"],
@@ -102,7 +102,7 @@ describe("transfers", () => {
       vi.stubGlobal("confirm", confirm);
       const fetch = mockFetch({
         ...LOOKUPS,
-        "GET /api/transactions/": [200, TRANSACTIONS],
+        "GET /api/transactions/": [200, page(TRANSACTIONS)],
         "DELETE /api/transfers/9/": [204],
       });
       const { wrapper } = await mountAt("/transactions");
@@ -115,7 +115,7 @@ describe("transfers", () => {
 
     it("keeps the transfer when the confirmation is declined", async () => {
       vi.stubGlobal("confirm", () => false);
-      const fetch = mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, TRANSACTIONS] });
+      const fetch = mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, page(TRANSACTIONS)] });
       const { wrapper } = await mountAt("/transactions");
       const calls = fetch.mock.calls.length;
       await wrapper.find("tbody button").trigger("click");
@@ -127,7 +127,7 @@ describe("transfers", () => {
     it("keeps the filters after creating or editing a transfer", async () => {
       mockFetch({
         ...LOOKUPS,
-        "GET /api/transactions/?wallet=2": [200, [TRANSACTIONS[0]]],
+        "GET /api/transactions/?wallet=2": [200, page([TRANSACTIONS[0]])],
         "GET /api/transfers/9/": [200, TRANSFER],
         "PATCH /api/transfers/9/": [200, TRANSFER],
       });
@@ -167,7 +167,7 @@ describe("transfers", () => {
       vi.setSystemTime(new Date(2026, 10, 12, 23, 30));
       const fetch = mockFetch({
         ...LOOKUPS,
-        "GET /api/transactions/": [200, []],
+        "GET /api/transactions/": [200, page([])],
         "POST /api/transfers/": [201, {}],
       });
       const { wrapper, router } = await mountAt("/transactions");
@@ -226,7 +226,7 @@ describe("transfers", () => {
         ...LOOKUPS,
         "GET /api/transfers/9/": [200, TRANSFER],
         "PATCH /api/transfers/9/": [200, TRANSFER],
-        "GET /api/transactions/": [200, TRANSACTIONS],
+        "GET /api/transactions/": [200, page(TRANSACTIONS)],
       });
       const { wrapper, router } = await mountAt("/transfers/9");
       expect(wrapper.find("h1").text()).toBe("Edit transfer");

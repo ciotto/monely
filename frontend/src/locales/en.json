@@ -87,6 +87,7 @@
   "transactions": {
     "title": "Transactions",
     "loading": "Loading…",
+    "loadMore": "Load more",
     "empty": "No transactions match the filters.",
     "new": "New transaction",
     "newTransfer": "New transfer",

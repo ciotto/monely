@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "@/auth";
 import { setLocale } from "@/i18n";
 
-import { mockFetch, mountAt, USER } from "./helpers";
+import { mockFetch, mountAt, page, USER } from "./helpers";
 
 const WALLETS = [
   { id: 1, name: "Bank", currency: "EUR", owners: [1], is_archived: false },
@@ -58,7 +58,7 @@ describe("transactions", () => {
     const rows = (wrapper) => wrapper.findAll("tbody tr").map((row) => row.findAll("td").map((cell) => cell.text()));
 
     it("lists the transactions from the header link", async () => {
-      mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, TRANSACTIONS] });
+      mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, page(TRANSACTIONS)] });
       const { wrapper, router } = await mountAt("/");
       await wrapper.find("header a[href='/transactions']").trigger("click");
       await flushPromises();
@@ -82,7 +82,7 @@ describe("transactions", () => {
 
     it("formats dates and amounts in the UI language", async () => {
       setLocale("it");
-      mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, TRANSACTIONS.slice(0, 1)] });
+      mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, page(TRANSACTIONS.slice(0, 1))] });
       const { wrapper } = await mountAt("/transactions");
       expect(rows(wrapper)[0][0]).toBe("12 nov 2026");
       // Intl separates the amount and the currency with a non-breaking space
@@ -90,7 +90,7 @@ describe("transactions", () => {
     });
 
     it("filters the transactions", async () => {
-      const fetch = mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, TRANSACTIONS] });
+      const fetch = mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, page(TRANSACTIONS)] });
       const { wrapper, router } = await mountAt("/transactions");
       expect(wrapper.findAll("select[name=wallet] option").map((option) => option.text())).toEqual([
         "All",
@@ -118,7 +118,7 @@ describe("transactions", () => {
     it("restores the filters from the URL", async () => {
       const fetch = mockFetch({
         ...LOOKUPS,
-        "GET /api/transactions/?wallet=1&date_from=2026-11-01": [200, TRANSACTIONS.slice(0, 2)],
+        "GET /api/transactions/?wallet=1&date_from=2026-11-01": [200, page(TRANSACTIONS.slice(0, 2))],
       });
       // Unknown and repeated parameters are ignored
       const { wrapper } = await mountAt("/transactions?wallet=1&date_from=2026-11-01&tag=5&tag=6&other=1");
@@ -132,7 +132,7 @@ describe("transactions", () => {
     it("keeps the filters after creating a transaction", async () => {
       mockFetch({
         ...LOOKUPS,
-        "GET /api/transactions/?wallet=1": [200, TRANSACTIONS.slice(0, 2)],
+        "GET /api/transactions/?wallet=1": [200, page(TRANSACTIONS.slice(0, 2))],
         "POST /api/transactions/": [201, {}],
       });
       const { wrapper, router } = await mountAt("/transactions?wallet=1");
@@ -149,7 +149,7 @@ describe("transactions", () => {
     it("keeps the filters after editing or leaving a transaction", async () => {
       mockFetch({
         ...LOOKUPS,
-        "GET /api/transactions/?category=3": [200, [TRANSACTIONS[0]]],
+        "GET /api/transactions/?category=3": [200, page([TRANSACTIONS[0]])],
         "GET /api/transactions/7/": [200, TRANSACTIONS[0]],
         "PATCH /api/transactions/7/": [200, TRANSACTIONS[0]],
       });
@@ -171,7 +171,7 @@ describe("transactions", () => {
     it("shows the filter errors returned by the backend", async () => {
       mockFetch({
         ...LOOKUPS,
-        "GET /api/transactions/": [200, TRANSACTIONS],
+        "GET /api/transactions/": [200, page(TRANSACTIONS)],
         "GET /api/transactions/?date_to=2026-10-01": [
           400,
           { date_to: ["The end date cannot precede the start date."] },
@@ -186,10 +186,67 @@ describe("transactions", () => {
     });
 
     it("shows a message when no transactions match", async () => {
-      mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, []] });
+      mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, page([])] });
       const { wrapper } = await mountAt("/transactions");
       expect(wrapper.text()).toContain("No transactions match the filters.");
       expect(wrapper.find("table").exists()).toBe(false);
+    });
+
+    describe("pagination", () => {
+      const NEXT = "http://testserver/api/transactions/?limit=500&offset=500";
+      const button = (wrapper) => wrapper.find("button[name=load-more]");
+
+      it("loads more transactions with the same filters", async () => {
+        mockFetch({
+          ...LOOKUPS,
+          "GET /api/transactions/?wallet=1": [200, page(TRANSACTIONS.slice(0, 1), NEXT)],
+          "GET /api/transactions/?wallet=1&offset=1": [200, page(TRANSACTIONS.slice(1, 2), NEXT)],
+          "GET /api/transactions/?wallet=1&offset=2": [200, page(TRANSACTIONS.slice(2))],
+        });
+        const { wrapper } = await mountAt("/transactions?wallet=1");
+        expect(wrapper.findAll("tbody tr")).toHaveLength(1);
+        expect(button(wrapper).text()).toBe("Load more");
+
+        await button(wrapper).trigger("click");
+        await flushPromises();
+        expect(wrapper.findAll("tbody tr")).toHaveLength(2);
+
+        await button(wrapper).trigger("click");
+        await flushPromises();
+        expect(wrapper.findAll("tbody tr td:nth-child(2)").map((cell) => cell.text())).toEqual([
+          "Supermarketcarholiday-2026",
+          "Pay",
+          "Old",
+        ]);
+        // The last page has no button
+        expect(button(wrapper).exists()).toBe(false);
+      });
+
+      it("hides the button when everything is loaded", async () => {
+        mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, page(TRANSACTIONS)] });
+        const { wrapper } = await mountAt("/transactions");
+        expect(button(wrapper).exists()).toBe(false);
+      });
+
+      it("disables the button while loading", async () => {
+        const fetch = mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, page(TRANSACTIONS, NEXT)] });
+        const { wrapper } = await mountAt("/transactions");
+        fetch.mockImplementation(() => new Promise(() => {}));
+        await button(wrapper).trigger("click");
+        expect(fetch).toHaveBeenLastCalledWith("/api/transactions/?offset=3", expect.anything());
+        expect(button(wrapper).attributes("disabled")).toBeDefined();
+        expect(button(wrapper).text()).toBe("Loading…");
+      });
+
+      it("shows an error when more transactions cannot be loaded", async () => {
+        mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, page(TRANSACTIONS, NEXT)] });
+        const { wrapper } = await mountAt("/transactions");
+        await button(wrapper).trigger("click");
+        await flushPromises();
+        expect(wrapper.find("[role=alert]").text()).toBe("Unable to load the transactions: try again later.");
+        expect(wrapper.findAll("tbody tr")).toHaveLength(3);
+        expect(button(wrapper).attributes("disabled")).toBeUndefined();
+      });
     });
 
     it("shows a loading message while fetching", async () => {
@@ -220,7 +277,7 @@ describe("transactions", () => {
         vi.stubGlobal("confirm", confirm);
         const fetch = mockFetch({
           ...LOOKUPS,
-          "GET /api/transactions/": [200, structuredClone(TRANSACTIONS)],
+          "GET /api/transactions/": [200, page(structuredClone(TRANSACTIONS))],
           "DELETE /api/transactions/7/": [204],
         });
         const { wrapper } = await mountAt("/transactions");
@@ -233,7 +290,7 @@ describe("transactions", () => {
 
       it("keeps the transaction when the confirmation is declined", async () => {
         vi.stubGlobal("confirm", () => false);
-        const fetch = mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, TRANSACTIONS] });
+        const fetch = mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, page(TRANSACTIONS)] });
         const { wrapper } = await mountAt("/transactions");
         const calls = fetch.mock.calls.length;
         await wrapper.find("tbody button").trigger("click");
@@ -246,7 +303,7 @@ describe("transactions", () => {
         vi.stubGlobal("confirm", () => true);
         mockFetch({
           ...LOOKUPS,
-          "GET /api/transactions/": [200, TRANSACTIONS],
+          "GET /api/transactions/": [200, page(TRANSACTIONS)],
           "DELETE /api/transactions/7/": [500, {}],
         });
         const { wrapper } = await mountAt("/transactions");
@@ -268,7 +325,7 @@ describe("transactions", () => {
     }
 
     it("exports the filtered transactions", async () => {
-      mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, TRANSACTIONS] });
+      mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, page(TRANSACTIONS)] });
       const { wrapper } = await mountAt("/transactions");
       const link = () => wrapper.find("a[download]");
       expect(link().text()).toBe("Export CSV");
@@ -281,7 +338,7 @@ describe("transactions", () => {
     it("imports a file and reloads the transactions", async () => {
       const fetch = mockFetch({
         ...LOOKUPS,
-        "GET /api/transactions/": [200, TRANSACTIONS],
+        "GET /api/transactions/": [200, page(TRANSACTIONS)],
         "POST /api/transactions/import/": [201, { transactions: 3, wallets: 1, categories: 0, tags: 2 }],
       });
       const { wrapper } = await mountAt("/transactions");
@@ -307,7 +364,7 @@ describe("transactions", () => {
       setLocale("it");
       mockFetch({
         ...LOOKUPS,
-        "GET /api/transactions/": [200, TRANSACTIONS],
+        "GET /api/transactions/": [200, page(TRANSACTIONS)],
         "POST /api/transactions/import/": [201, { transactions: 1, wallets: 0, categories: 0, tags: 0 }],
       });
       const { wrapper } = await mountAt("/transactions");
@@ -318,7 +375,7 @@ describe("transactions", () => {
     it("shows the invalid rows of the file", async () => {
       mockFetch({
         ...LOOKUPS,
-        "GET /api/transactions/": [200, TRANSACTIONS],
+        "GET /api/transactions/": [200, page(TRANSACTIONS)],
         "POST /api/transactions/import/": [
           400,
           { file: ["Row 2, amount: The amount cannot be zero.", "Row 3, wallet: This wallet is archived."] },
@@ -338,7 +395,7 @@ describe("transactions", () => {
     it("shows an error when the import fails", async () => {
       mockFetch({
         ...LOOKUPS,
-        "GET /api/transactions/": [200, TRANSACTIONS],
+        "GET /api/transactions/": [200, page(TRANSACTIONS)],
         "POST /api/transactions/import/": [500, {}],
       });
       const { wrapper } = await mountAt("/transactions");
@@ -348,7 +405,7 @@ describe("transactions", () => {
     });
 
     it("disables the import while uploading", async () => {
-      const fetch = mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, TRANSACTIONS] });
+      const fetch = mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, page(TRANSACTIONS)] });
       const { wrapper } = await mountAt("/transactions");
       fetch.mockImplementation(() => new Promise(() => {}));
       await choose(wrapper);
@@ -375,7 +432,7 @@ describe("transactions", () => {
       vi.setSystemTime(new Date(2026, 10, 12, 23, 30));
       const fetch = mockFetch({
         ...LOOKUPS,
-        "GET /api/transactions/": [200, []],
+        "GET /api/transactions/": [200, page([])],
         "POST /api/transactions/": [201, {}],
       });
       const { wrapper, router } = await mountAt("/transactions");
@@ -446,7 +503,7 @@ describe("transactions", () => {
         ...LOOKUPS,
         "GET /api/transactions/8/": [200, transaction],
         "PATCH /api/transactions/8/": [200, transaction],
-        "GET /api/transactions/": [200, [transaction]],
+        "GET /api/transactions/": [200, page([transaction])],
       });
       const { wrapper, router } = await mountAt("/transactions/8");
       expect(wrapper.find("h1").text()).toBe("Edit transaction");
@@ -478,7 +535,7 @@ describe("transactions", () => {
         ...LOOKUPS,
         "GET /api/transactions/7/": [200, TRANSACTIONS[0]],
         "PATCH /api/transactions/7/": [200, TRANSACTIONS[0]],
-        "GET /api/transactions/": [200, TRANSACTIONS],
+        "GET /api/transactions/": [200, page(TRANSACTIONS)],
       });
       const { wrapper } = await mountAt("/transactions/7");
       expect(wrapper.find("input[name=kind][value=expense]").element.checked).toBe(true);

@@ -52,8 +52,8 @@ class TestTransactionListView:
         response = user_client.get(self.url)
 
         assert response.status_code == 200
-        assert [item["id"] for item in response.json()] == [transaction.pk, older.pk]
-        assert response.json()[0] == {
+        assert [item["id"] for item in response.json()["results"]] == [transaction.pk, older.pk]
+        assert response.json()["results"][0] == {
             "id": transaction.pk,
             "wallet": wallet.pk,
             "date": "2026-11-05",
@@ -73,7 +73,26 @@ class TestTransactionListView:
 
         response = user_client.get(self.url)
 
-        assert [item["id"] for item in response.json()] == [second.pk, first.pk]
+        assert [item["id"] for item in response.json()["results"]] == [second.pk, first.pk]
+
+    def test_list_paginated(self, user_client, wallet):
+        Transaction.objects.bulk_create(
+            Transaction(wallet=wallet, date=datetime.date(2026, 11, 1), amount=Decimal("-1.00"), description="Coffee")
+            for _ in range(502)
+        )
+        ids = list(Transaction.objects.values_list("pk", flat=True))
+
+        response = user_client.get(self.url)
+
+        assert response.json()["count"] == 502
+        assert [item["id"] for item in response.json()["results"]] == ids[:500]
+        assert response.json()["next"] is not None
+
+        # The next page starts after the rows already loaded, and a page never exceeds 500 rows
+        response = user_client.get(self.url, {"offset": 500, "limit": 1000})
+
+        assert [item["id"] for item in response.json()["results"]] == ids[500:]
+        assert response.json()["next"] is None
 
     def test_list_anonymous(self, api_client):
         response = api_client.get(self.url)
@@ -86,7 +105,7 @@ class TestTransactionListView:
 
         response = user_client.get(self.url, {"wallet": wallet.pk})
 
-        assert [item["id"] for item in response.json()] == [transaction.pk]
+        assert [item["id"] for item in response.json()["results"]] == [transaction.pk]
 
     def test_filter_by_category(self, user_client, wallet, category):
         transaction = create_transaction(wallet, category=category)
@@ -94,7 +113,7 @@ class TestTransactionListView:
 
         response = user_client.get(self.url, {"category": category.pk})
 
-        assert [item["id"] for item in response.json()] == [transaction.pk]
+        assert [item["id"] for item in response.json()["results"]] == [transaction.pk]
 
     def test_filter_by_tags(self, user_client, wallet, tags):
         # A transaction matches when it has any of the tags, and it is listed once
@@ -105,7 +124,7 @@ class TestTransactionListView:
 
         response = user_client.get(self.url, {"tag": [tag.pk for tag in tags]})
 
-        assert [item["id"] for item in response.json()] == [both.pk, one.pk]
+        assert [item["id"] for item in response.json()["results"]] == [both.pk, one.pk]
 
     def test_filter_by_date_range(self, user_client, wallet):
         create_transaction(wallet, day=1)
@@ -114,7 +133,7 @@ class TestTransactionListView:
 
         response = user_client.get(self.url, {"date_from": "2026-11-02", "date_to": "2026-11-10"})
 
-        assert [item["id"] for item in response.json()] == [transaction.pk for transaction in inside]
+        assert [item["id"] for item in response.json()["results"]] == [transaction.pk for transaction in inside]
 
     def test_filter_combined(self, user_client, wallet, category):
         transaction = create_transaction(wallet, day=5, category=category)
@@ -123,7 +142,7 @@ class TestTransactionListView:
 
         response = user_client.get(self.url, {"category": category.pk, "date_from": "2026-11-05"})
 
-        assert [item["id"] for item in response.json()] == [transaction.pk]
+        assert [item["id"] for item in response.json()["results"]] == [transaction.pk]
 
     @pytest.mark.parametrize(
         "params,field",

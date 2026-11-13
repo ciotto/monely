@@ -18,6 +18,7 @@ from rest_framework.generics import (
     RetrieveUpdateAPIView,
     RetrieveUpdateDestroyAPIView,
 )
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
@@ -183,9 +184,17 @@ class TransactionFilterMixin:
         return queryset
 
 
+class TransactionPagination(LimitOffsetPagination):
+    """Pages of the transaction list: the SPA loads the next one from the number of rows it already shows."""
+
+    default_limit = 500
+    max_limit = 500
+
+
 class TransactionListView(TransactionFilterMixin, ListCreateAPIView):
     queryset = Transaction.objects.prefetch_related("tags")
     serializer_class = TransactionSerializer
+    pagination_class = TransactionPagination
 
 
 class TransactionExportView(TransactionFilterMixin, GenericAPIView):
