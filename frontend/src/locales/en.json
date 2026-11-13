@@ -104,6 +104,12 @@
     "transfer": "Transfer",
     "filters": {
       "wallet": "Wallet",
+      "kind": "Type",
+      "kinds": {
+        "income": "Income",
+        "expense": "Expenses",
+        "transfer": "Transfers"
+      },
       "category": "Category",
       "tag": "Tag",
       "dateFrom": "From",

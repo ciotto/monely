@@ -104,6 +104,12 @@
     "transfer": "Trasferimento",
     "filters": {
       "wallet": "Portafoglio",
+      "kind": "Tipo",
+      "kinds": {
+        "income": "Entrate",
+        "expense": "Uscite",
+        "transfer": "Trasferimenti"
+      },
       "category": "Categoria",
       "tag": "Tag",
       "dateFrom": "Dal",

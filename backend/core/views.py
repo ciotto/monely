@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.db import connection, transaction
+from django.db.models import Q
 from django.http import FileResponse, Http404, HttpResponse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
@@ -165,6 +166,13 @@ class TagDetailView(RetrieveUpdateDestroyAPIView):
 class TransactionFilterMixin:
     """Filters the transactions with the query parameters of the list."""
 
+    # Like in the dashboard, the transactions of a transfer are neither income nor expenses
+    kinds = {
+        "income": Q(transfer=None, amount__gt=0),
+        "expense": Q(transfer=None, amount__lt=0),
+        "transfer": Q(transfer__isnull=False),
+    }
+
     def get_queryset(self):
         queryset = super().get_queryset()
         # Repeated parameters (e.g. ?tag=1&tag=2) are read as lists by the serializer
@@ -173,6 +181,8 @@ class TransactionFilterMixin:
         data = filters.validated_data
         if "wallet" in data:
             queryset = queryset.filter(wallet=data["wallet"])
+        if "kind" in data:
+            queryset = queryset.filter(self.kinds[data["kind"]])
         if "category" in data:
             queryset = queryset.filter(category=data["category"])
         if data.get("tag"):

@@ -97,21 +97,28 @@ describe("transactions", () => {
         "Bank",
         "Old card",
       ]);
+      expect(wrapper.findAll("select[name=kind] option").map((option) => option.text())).toEqual([
+        "All",
+        "Income",
+        "Expenses",
+        "Transfers",
+      ]);
 
       await wrapper.find("select[name=wallet]").setValue("1");
       await flushPromises();
       expect(fetch.mock.lastCall[0]).toBe("/api/transactions/?wallet=1");
 
+      await wrapper.find("select[name=kind]").setValue("expense");
       await wrapper.find("select[name=category]").setValue("3");
       await wrapper.find("select[name=tag]").setValue("6");
       await wrapper.find("input[name=date_from]").setValue("2026-11-01");
       await wrapper.find("input[name=date_to]").setValue("2026-11-30");
       await flushPromises();
       expect(fetch.mock.lastCall[0]).toBe(
-        "/api/transactions/?wallet=1&category=3&tag=6&date_from=2026-11-01&date_to=2026-11-30",
+        "/api/transactions/?wallet=1&kind=expense&category=3&tag=6&date_from=2026-11-01&date_to=2026-11-30",
       );
       expect(router.currentRoute.value.fullPath).toBe(
-        "/transactions?wallet=1&category=3&tag=6&date_from=2026-11-01&date_to=2026-11-30",
+        "/transactions?wallet=1&kind=expense&category=3&tag=6&date_from=2026-11-01&date_to=2026-11-30",
       );
     });
 

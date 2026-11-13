@@ -193,6 +193,7 @@ class TransactionFilterSerializer(serializers.Serializer):
     """The query parameters that filter the transaction list; tags match when the transaction has any of them."""
 
     wallet = serializers.PrimaryKeyRelatedField(required=False, queryset=Wallet.objects.all())
+    kind = serializers.ChoiceField(required=False, choices=["income", "expense", "transfer"])
     category = serializers.PrimaryKeyRelatedField(required=False, queryset=Category.objects.all())
     tag = serializers.PrimaryKeyRelatedField(many=True, required=False, queryset=Tag.objects.all())
     date_from = serializers.DateField(required=False)

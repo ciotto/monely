@@ -25,7 +25,7 @@ const tags = computed(() => byId(tagList.value));
 // Empty values do not filter; they start from the URL, so they survive a reload and the round trip to the forms
 const filters = reactive(
   Object.fromEntries(
-    ["wallet", "category", "tag", "date_from", "date_to"].map((name) => {
+    ["wallet", "kind", "category", "tag", "date_from", "date_to"].map((name) => {
       const value = route.query[name];
       return [name, typeof value === "string" ? value : ""];
     }),
@@ -216,7 +216,7 @@ onMounted(load);
     <p v-if="!transactions && !error && !filterErrors.length" class="mt-6 text-slate-500">
       {{ $t("transactions.loading") }}
     </p>
-    <div role="search" class="mt-6 grid grid-cols-2 gap-3 text-sm sm:grid-cols-5">
+    <div role="search" class="mt-6 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
       <label>
         <span class="block text-slate-500">{{ $t("transactions.filters.wallet") }}</span>
         <select
@@ -226,6 +226,15 @@ onMounted(load);
         >
           <option value="">{{ $t("transactions.filters.all") }}</option>
           <option v-for="wallet in walletList" :key="wallet.id" :value="wallet.id">{{ wallet.name }}</option>
+        </select>
+      </label>
+      <label>
+        <span class="block text-slate-500">{{ $t("transactions.filters.kind") }}</span>
+        <select v-model="filters.kind" name="kind" class="mt-1 block w-full rounded border border-slate-300 px-2 py-1">
+          <option value="">{{ $t("transactions.filters.all") }}</option>
+          <option v-for="kind in ['income', 'expense', 'transfer']" :key="kind" :value="kind">
+            {{ $t(`transactions.filters.kinds.${kind}`) }}
+          </option>
         </select>
       </label>
       <label>

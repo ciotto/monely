@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 from django.urls import reverse
 
-from core.models import Category, Tag, Transaction, Wallet
+from core.models import Category, Tag, Transaction, Transfer, Wallet
 
 
 @pytest.fixture
@@ -99,6 +99,23 @@ class TestTransactionListView:
 
         assert response.status_code == 403
 
+    @pytest.mark.parametrize(
+        "kind,expected", [("income", ["salary"]), ("expense", ["shopping"]), ("transfer", ["out", "in"])]
+    )
+    def test_filter_by_kind(self, user_client, wallet, kind, expected):
+        # The transactions of a transfer are neither income nor expenses
+        transfer = Transfer.objects.create()
+        transactions = {
+            "salary": create_transaction(wallet, day=4, amount="1500.00"),
+            "shopping": create_transaction(wallet, day=3),
+            "out": create_transaction(wallet, day=2, amount="-50.00", transfer=transfer),
+            "in": create_transaction(Wallet.objects.create(name="Cash"), day=1, amount="50.00", transfer=transfer),
+        }
+
+        response = user_client.get(self.url, {"kind": kind})
+
+        assert [item["id"] for item in response.json()["results"]] == [transactions[name].pk for name in expected]
+
     def test_filter_by_wallet(self, user_client, wallet):
         transaction = create_transaction(wallet)
         create_transaction(Wallet.objects.create(name="Cash"))
@@ -148,6 +165,7 @@ class TestTransactionListView:
         "params,field",
         [
             ({"wallet": 999}, "wallet"),
+            ({"kind": "refund"}, "kind"),
             ({"category": "groceries"}, "category"),
             ({"tag": 999}, "tag"),
             ({"date_from": "11/02/2026"}, "date_from"),
