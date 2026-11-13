@@ -86,6 +86,9 @@ Tags were initially in this list and have been moved into the data model.
 
 ## Getting started
 
+To self-host Monely with the published Docker image, follow the [installation guide](docs/installation.md). The rest of
+this section covers the development setup.
+
 ### Requirements
 
 - Docker with docker compose

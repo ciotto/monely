@@ -1,0 +1,44 @@
+# Example docker compose file to self-host Monely; see docs/installation.md.
+# Values in ${...} are read from a .env file placed next to this file.
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: monely
+      POSTGRES_USER: monely
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U monely -d monely"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - monely-db-data:/var/lib/postgresql/data
+
+  # One-shot job: applies the migrations, then exits; the app starts only if it succeeds
+  migrate:
+    image: ciotto87/monely:${MONELY_VERSION:-stable}
+    environment: &monely-env
+      DATABASE_URL: postgresql://monely:${POSTGRES_PASSWORD}@db:5432/monely
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      DEBUG: "False"
+    command: ["python", "backend/manage.py", "migrate", "--noinput"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    image: ciotto87/monely:${MONELY_VERSION:-stable}
+    restart: unless-stopped
+    environment: *monely-env
+    ports:
+      - "${MONELY_PORT:-8000}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  monely-db-data:
