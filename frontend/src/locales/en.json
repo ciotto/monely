@@ -114,7 +114,8 @@
       "tag": "Tag",
       "dateFrom": "From",
       "dateTo": "To",
-      "all": "All"
+      "all": "All",
+      "noCategory": "No category"
     },
     "columns": {
       "date": "Date",

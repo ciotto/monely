@@ -53,7 +53,8 @@ shows where the money goes. It is designed to be used by a single household, wit
 
 - **Welcome flow**: on first run, create the first user and the first wallet.
 - **Wallets**: create, edit, archive and assign owners.
-- **Transactions**: create, edit and delete transactions; list them with filters (wallet, date range, category, tags).
+- **Transactions**: create, edit and delete transactions; list them 500 at a time with filters (wallet,
+  type: income, expenses or transfers, date range, category or no category, tags).
 - **Transfers**: move money between two wallets; both transactions are listed with the others.
 - **CSV export/import**: export the filtered transactions to CSV (`date,wallet,currency,amount,description,category,
   tags,notes,transfer`, tags separated by `|`) and import them back; wallets, categories and tags are matched by name

@@ -189,12 +189,21 @@ class TransferSerializer(serializers.Serializer):
             leg.save()
 
 
+class CategoryFilterField(serializers.PrimaryKeyRelatedField):
+    """A category, or "none" for the transactions without one."""
+
+    def to_internal_value(self, data):
+        if data == "none":
+            return None
+        return super().to_internal_value(data)
+
+
 class TransactionFilterSerializer(serializers.Serializer):
     """The query parameters that filter the transaction list; tags match when the transaction has any of them."""
 
     wallet = serializers.PrimaryKeyRelatedField(required=False, queryset=Wallet.objects.all())
     kind = serializers.ChoiceField(required=False, choices=["income", "expense", "transfer"])
-    category = serializers.PrimaryKeyRelatedField(required=False, queryset=Category.objects.all())
+    category = CategoryFilterField(required=False, queryset=Category.objects.all())
     tag = serializers.PrimaryKeyRelatedField(many=True, required=False, queryset=Tag.objects.all())
     date_from = serializers.DateField(required=False)
     date_to = serializers.DateField(required=False)

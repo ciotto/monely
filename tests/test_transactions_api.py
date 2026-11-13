@@ -132,6 +132,16 @@ class TestTransactionListView:
 
         assert [item["id"] for item in response.json()["results"]] == [transaction.pk]
 
+    def test_filter_without_category(self, user_client, wallet, category):
+        transaction = create_transaction(wallet)
+        create_transaction(wallet, category=category)
+        # The transactions of a transfer are not listed as uncategorized
+        create_transaction(wallet, transfer=Transfer.objects.create())
+
+        response = user_client.get(self.url, {"category": "none"})
+
+        assert [item["id"] for item in response.json()["results"]] == [transaction.pk]
+
     def test_filter_by_tags(self, user_client, wallet, tags):
         # A transaction matches when it has any of the tags, and it is listed once
         both = create_transaction(wallet, day=3, tags=tags)

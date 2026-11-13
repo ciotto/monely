@@ -183,8 +183,11 @@ class TransactionFilterMixin:
             queryset = queryset.filter(wallet=data["wallet"])
         if "kind" in data:
             queryset = queryset.filter(self.kinds[data["kind"]])
-        if "category" in data:
+        if data.get("category"):
             queryset = queryset.filter(category=data["category"])
+        elif "category" in data:
+            # The transactions of a transfer have no category either, but they are shown as transfers
+            queryset = queryset.filter(category=None, transfer=None)
         if data.get("tag"):
             queryset = queryset.filter(tags__in=data["tag"]).distinct()
         if "date_from" in data:

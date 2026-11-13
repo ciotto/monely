@@ -245,6 +245,7 @@ onMounted(load);
           class="mt-1 block w-full rounded border border-slate-300 px-2 py-1"
         >
           <option value="">{{ $t("transactions.filters.all") }}</option>
+          <option value="none">{{ $t("transactions.filters.noCategory") }}</option>
           <option v-for="category in categoryList" :key="category.id" :value="category.id">
             {{ category.name }}
           </option>

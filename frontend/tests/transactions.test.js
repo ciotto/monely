@@ -103,6 +103,17 @@ describe("transactions", () => {
         "Expenses",
         "Transfers",
       ]);
+      expect(wrapper.findAll("select[name=category] option").map((option) => option.text())).toEqual([
+        "All",
+        "No category",
+        "Groceries",
+        "Salary",
+      ]);
+
+      await wrapper.find("select[name=category]").setValue("none");
+      await flushPromises();
+      expect(fetch.mock.lastCall[0]).toBe("/api/transactions/?category=none");
+      await wrapper.find("select[name=category]").setValue("");
 
       await wrapper.find("select[name=wallet]").setValue("1");
       await flushPromises();
