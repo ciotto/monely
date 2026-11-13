@@ -81,7 +81,7 @@ docker compose ps -a
 `db` and `app` must be `Up` and `migrate` must be `Exited (0)`. If `migrate` failed, read its output with
 `docker compose logs migrate`.
 
-> **Image not published yet?** The image is pushed to [Docker Hub](https://hub.docker.com/r/ciotto87/monely) when a
+> The image is pushed to [Docker Hub](https://hub.docker.com/r/ciotto87/monely) when a
 > [GitHub release](https://github.com/ciotto/monely/releases) is published. Before the first release, build it from a
 > clone of the repository and point `MONELY_VERSION` to it:
 >
