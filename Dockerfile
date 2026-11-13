@@ -1,4 +1,16 @@
 # syntax=docker/dockerfile:1
+# Built on the build platform: the output is static, so multi-arch images do not need to emulate Node
+FROM --platform=$BUILDPLATFORM node:24-alpine AS frontend
+
+WORKDIR /frontend
+
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+COPY frontend/ ./
+RUN npm run build
+
+
 FROM python:3.14-slim AS base
 
 ENV LANG=C.UTF-8
@@ -42,6 +54,9 @@ USER ${APP_USER}:${APP_USER}
 
 
 FROM base AS production
+
+COPY --from=frontend --chown=${APP_USER}:${APP_USER} /frontend/dist /code/frontend/dist
+RUN SECRET_KEY=build DATABASE_URL=sqlite:////tmp/build.db python backend/manage.py collectstatic --noinput
 
 USER ${APP_USER}:${APP_USER}
 

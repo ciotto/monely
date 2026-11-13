@@ -84,9 +84,10 @@ def build_dashboard(month, wallet=None):
             }
         )
 
+    # Meta.ordering is ignored by aggregation queries, so the order is explicit
     balances = wallets.annotate(
         balance=Sum("transactions__amount", filter=Q(transactions__date__lt=add_months(month, 1)), default=0)
-    )
+    ).order_by("name")
     return {
         "month": month.strftime("%Y-%m"),
         "previous_month": periods["previous_month_"].strftime("%Y-%m"),

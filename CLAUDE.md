@@ -65,6 +65,8 @@ Before considering a task done: `make lint DEV_ENV=local check_only=true` and `m
 
 ## Docker
 
-- The `Dockerfile` has three stages: `base`, `development` (used by docker compose, with the code mounted in `/code`) and `production` (gunicorn + uvicorn on `monely.asgi:application`, port 8000).
+- The `Dockerfile` has four stages: `frontend` (Vite build), `base`, `development` (used by docker compose, with the code mounted in `/code`) and `production` (gunicorn + uvicorn on `monely.asgi:application`, port 8000).
+- In production a single image serves everything: WhiteNoise serves `frontend/dist` at the site root and the collected static files under `/static/`, while `FrontendView` returns `index.html` for every client-side route (anything outside `api/`, `admin/`, `static/`).
+- Publishing a GitHub release (`.github/workflows/release.yml`) pushes the multi-arch `production` image to Docker Hub as `ciotto87/monely:<git tag>` and `:stable` (pre-releases only get the version tag).
 - Postgres is exposed on the host on port `5433`.
 - No reverse proxy planned.

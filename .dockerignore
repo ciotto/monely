@@ -1,0 +1,7 @@
+.git
+.virtualenv
+**/__pycache__
+.env.secrets
+frontend/node_modules
+frontend/dist
+frontend/coverage

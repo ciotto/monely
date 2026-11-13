@@ -53,6 +53,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -146,6 +147,16 @@ LOCALE_PATHS = (os.path.join(BASE_DIR, "locales"),)
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR.parent / "static"
+
+
+# Frontend
+# https://whitenoise.readthedocs.io/en/stable/django.html#WHITENOISE_ROOT
+
+# Vite build of the SPA, served at the site root; missing in development, where the Vite dev server is used
+FRONTEND_DIR = BASE_DIR.parent / "frontend" / "dist"
+WHITENOISE_ROOT = FRONTEND_DIR if FRONTEND_DIR.is_dir() else None
+# Vite puts a content hash in the name of every file under assets/
+WHITENOISE_IMMUTABLE_FILE_TEST = r"^/assets/"
 
 
 # Email

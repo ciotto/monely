@@ -16,9 +16,13 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
+
+from core.views import FrontendView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include("core.urls")),
+    # Client-side routes of the SPA; must stay last
+    re_path(r"^(?!(?:api|admin|static)(?:/|$))", FrontendView.as_view(), name="frontend"),
 ]

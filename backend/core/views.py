@@ -1,9 +1,12 @@
+from django.conf import settings
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.db import connection, transaction
-from django.http import HttpResponse
+from django.http import FileResponse, Http404, HttpResponse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
+from django.views import View
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -219,3 +222,14 @@ class DashboardView(APIView):
         filters.is_valid(raise_exception=True)
         month = filters.validated_data.get("month", timezone.localdate()).replace(day=1)
         return Response(build_dashboard(month, filters.validated_data.get("wallet")))
+
+
+@method_decorator(never_cache, name="dispatch")
+class FrontendView(View):
+    """Serves the SPA entry point for every client-side route; unknown routes get the SPA's own 404 page."""
+
+    def get(self, request, *args, **kwargs):
+        index = settings.FRONTEND_DIR / "index.html"
+        if not index.is_file():
+            raise Http404
+        return FileResponse(index.open("rb"), content_type="text/html; charset=utf-8")
