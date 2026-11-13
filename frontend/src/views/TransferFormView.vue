@@ -77,7 +77,8 @@ async function submit() {
     } else {
       await apiFetch("/transfers/", { method: "POST", body });
     }
-    await router.push({ name: "transactions" });
+    // Back to the list with the filters it was opened from
+    await router.push({ name: "transactions", query: route.query });
   } catch (e) {
     if (e.status === 400) {
       fieldErrors.value = e.data;
@@ -213,7 +214,7 @@ async function submit() {
           {{ $t("transfers.form.save") }}
         </button>
         <RouterLink
-          :to="{ name: 'transactions' }"
+          :to="{ name: 'transactions', query: route.query }"
           class="flex-1 rounded border border-slate-300 px-4 py-2 text-center font-medium hover:border-brand"
         >
           {{ $t("transfers.form.cancel") }}

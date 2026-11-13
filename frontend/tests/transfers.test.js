@@ -123,6 +123,28 @@ describe("transfers", () => {
       expect(fetch).toHaveBeenCalledTimes(calls);
       expect(rows(wrapper)).toHaveLength(3);
     });
+
+    it("keeps the filters after creating or editing a transfer", async () => {
+      mockFetch({
+        ...LOOKUPS,
+        "GET /api/transactions/?wallet=2": [200, [TRANSACTIONS[0]]],
+        "GET /api/transfers/9/": [200, TRANSFER],
+        "PATCH /api/transfers/9/": [200, TRANSFER],
+      });
+      const { wrapper, router } = await mountAt("/transactions?wallet=2");
+      await wrapper.find("a[href='/transfers/9?wallet=2']").trigger("click");
+      await flushPromises();
+      await wrapper.find("form").trigger("submit");
+      await flushPromises();
+      expect(router.currentRoute.value.fullPath).toBe("/transactions?wallet=2");
+
+      await wrapper.find("a[href='/transfers/new?wallet=2']").trigger("click");
+      await flushPromises();
+      await wrapper.find("a[href='/transactions?wallet=2']").trigger("click");
+      await flushPromises();
+      expect(router.currentRoute.value.fullPath).toBe("/transactions?wallet=2");
+      expect(wrapper.find("select[name=wallet]").element.value).toBe("2");
+    });
   });
 
   describe("form", () => {

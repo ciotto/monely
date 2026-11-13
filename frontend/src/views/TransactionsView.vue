@@ -2,12 +2,15 @@
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { ArrowLeftRight } from "@lucide/vue";
 import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 
 import { apiFetch } from "@/api/client";
 import CategoryIcon from "@/components/CategoryIcon.vue";
 import { formatAmount, formatDate } from "@/format";
 
 const { t, locale } = useI18n();
+const route = useRoute();
+const router = useRouter();
 const transactions = ref(null);
 // The lists keep the backend order (by name), the maps by id show the names of the related objects
 const walletList = ref([]);
@@ -16,11 +19,20 @@ const tagList = ref([]);
 const wallets = computed(() => byId(walletList.value));
 const categories = computed(() => byId(categoryList.value));
 const tags = computed(() => byId(tagList.value));
-// Empty values do not filter
-const filters = reactive({ wallet: "", category: "", tag: "", date_from: "", date_to: "" });
+// Empty values do not filter; they start from the URL, so they survive a reload and the round trip to the forms
+const filters = reactive(
+  Object.fromEntries(
+    ["wallet", "category", "tag", "date_from", "date_to"].map((name) => {
+      const value = route.query[name];
+      return [name, typeof value === "string" ? value : ""];
+    }),
+  ),
+);
+// The non-empty filters, kept in the URL and passed to the forms to come back to the same list
+const filterQuery = computed(() => Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== "")));
 // The query string of the filters, shared by the list and the export
 const query = computed(() => {
-  const params = new URLSearchParams(Object.entries(filters).filter(([, value]) => value !== "")).toString();
+  const params = new URLSearchParams(filterQuery.value).toString();
   return params ? `?${params}` : "";
 });
 const error = ref(null);
@@ -52,8 +64,8 @@ async function loadTransactions() {
 // The transactions of a transfer are edited and deleted together, through the transfer
 function editRoute(transaction) {
   return transaction.transfer
-    ? { name: "transfer-edit", params: { id: transaction.transfer } }
-    : { name: "transaction-edit", params: { id: transaction.id } };
+    ? { name: "transfer-edit", params: { id: transaction.transfer }, query: filterQuery.value }
+    : { name: "transaction-edit", params: { id: transaction.id }, query: filterQuery.value };
 }
 
 async function remove(transaction) {
@@ -118,7 +130,10 @@ async function importFile(event) {
   await load();
 }
 
-watch(filters, loadTransactions);
+watch(filters, () => {
+  router.replace({ query: filterQuery.value });
+  loadTransactions();
+});
 
 onMounted(load);
 </script>
@@ -149,12 +164,15 @@ onMounted(load);
           />
         </label>
         <RouterLink
-          :to="{ name: 'transfer-new' }"
+          :to="{ name: 'transfer-new', query: filterQuery }"
           class="rounded border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
         >
           {{ $t("transactions.newTransfer") }}
         </RouterLink>
-        <RouterLink :to="{ name: 'transaction-new' }" class="rounded bg-brand px-4 py-2 text-white hover:bg-brand-dark">
+        <RouterLink
+          :to="{ name: 'transaction-new', query: filterQuery }"
+          class="rounded bg-brand px-4 py-2 text-white hover:bg-brand-dark"
+        >
           {{ $t("transactions.new") }}
         </RouterLink>
       </div>

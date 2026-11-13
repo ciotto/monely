@@ -91,7 +91,7 @@ describe("transactions", () => {
 
     it("filters the transactions", async () => {
       const fetch = mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, TRANSACTIONS] });
-      const { wrapper } = await mountAt("/transactions");
+      const { wrapper, router } = await mountAt("/transactions");
       expect(wrapper.findAll("select[name=wallet] option").map((option) => option.text())).toEqual([
         "All",
         "Bank",
@@ -110,6 +110,62 @@ describe("transactions", () => {
       expect(fetch.mock.lastCall[0]).toBe(
         "/api/transactions/?wallet=1&category=3&tag=6&date_from=2026-11-01&date_to=2026-11-30",
       );
+      expect(router.currentRoute.value.fullPath).toBe(
+        "/transactions?wallet=1&category=3&tag=6&date_from=2026-11-01&date_to=2026-11-30",
+      );
+    });
+
+    it("restores the filters from the URL", async () => {
+      const fetch = mockFetch({
+        ...LOOKUPS,
+        "GET /api/transactions/?wallet=1&date_from=2026-11-01": [200, TRANSACTIONS.slice(0, 2)],
+      });
+      // Unknown and repeated parameters are ignored
+      const { wrapper } = await mountAt("/transactions?wallet=1&date_from=2026-11-01&tag=5&tag=6&other=1");
+      expect(fetch.mock.lastCall[0]).toBe("/api/transactions/?wallet=1&date_from=2026-11-01");
+      expect(wrapper.find("select[name=wallet]").element.value).toBe("1");
+      expect(wrapper.find("select[name=tag]").element.value).toBe("");
+      expect(wrapper.find("input[name=date_from]").element.value).toBe("2026-11-01");
+      expect(wrapper.findAll("tbody tr")).toHaveLength(2);
+    });
+
+    it("keeps the filters after creating a transaction", async () => {
+      mockFetch({
+        ...LOOKUPS,
+        "GET /api/transactions/?wallet=1": [200, TRANSACTIONS.slice(0, 2)],
+        "POST /api/transactions/": [201, {}],
+      });
+      const { wrapper, router } = await mountAt("/transactions?wallet=1");
+      await wrapper.find("a[href='/transactions/new?wallet=1']").trigger("click");
+      await flushPromises();
+      await wrapper.find("input[name=amount]").setValue("10");
+      await wrapper.find("input[name=description]").setValue("Bakery");
+      await wrapper.find("form").trigger("submit");
+      await flushPromises();
+      expect(router.currentRoute.value.fullPath).toBe("/transactions?wallet=1");
+      expect(wrapper.find("select[name=wallet]").element.value).toBe("1");
+    });
+
+    it("keeps the filters after editing or leaving a transaction", async () => {
+      mockFetch({
+        ...LOOKUPS,
+        "GET /api/transactions/?category=3": [200, [TRANSACTIONS[0]]],
+        "GET /api/transactions/7/": [200, TRANSACTIONS[0]],
+        "PATCH /api/transactions/7/": [200, TRANSACTIONS[0]],
+      });
+      const { wrapper, router } = await mountAt("/transactions?category=3");
+      await wrapper.find("a[href='/transactions/7?category=3']").trigger("click");
+      await flushPromises();
+      await wrapper.find("form").trigger("submit");
+      await flushPromises();
+      expect(router.currentRoute.value.fullPath).toBe("/transactions?category=3");
+
+      await wrapper.find("a[href='/transactions/7?category=3']").trigger("click");
+      await flushPromises();
+      await wrapper.find("a[href='/transactions?category=3']").trigger("click");
+      await flushPromises();
+      expect(router.currentRoute.value.fullPath).toBe("/transactions?category=3");
+      expect(wrapper.find("select[name=category]").element.value).toBe("3");
     });
 
     it("shows the filter errors returned by the backend", async () => {
