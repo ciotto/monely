@@ -62,6 +62,7 @@ const LOOKUPS = {
   "GET /api/wallets/": [200, WALLETS],
   "GET /api/categories/": [200, []],
   "GET /api/tags/": [200, []],
+  "GET /api/recurring-transactions/due/": [200, []],
 };
 
 // Mounted apps would otherwise keep reacting to the shared auth state of the next tests

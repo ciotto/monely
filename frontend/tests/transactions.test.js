@@ -38,6 +38,7 @@ const LOOKUPS = {
   "GET /api/wallets/": [200, WALLETS],
   "GET /api/categories/": [200, CATEGORIES],
   "GET /api/tags/": [200, TAGS],
+  "GET /api/recurring-transactions/due/": [200, []],
 };
 
 // Mounted apps would otherwise keep reacting to the shared auth state of the next tests
@@ -371,6 +372,7 @@ describe("transactions", () => {
         "/api/wallets/",
         "/api/categories/",
         "/api/tags/",
+        "/api/recurring-transactions/due/",
         "/api/transactions/",
       ]);
       expect(wrapper.find("[role=status]").text()).toBe(

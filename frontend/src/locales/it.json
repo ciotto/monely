@@ -9,6 +9,7 @@
     "logout": "Esci",
     "maintenance": "Manutenzione",
     "menu": "Account e impostazioni",
+    "recurring": "Movimenti ricorrenti",
     "settings": "Impostazioni",
     "tags": "Tag",
     "transactions": "Movimenti",
@@ -102,6 +103,16 @@
     "importCreated": "Nuovi: {wallets} portafogli, {categories} categorie, {tags} tag.",
     "importFailed": "Il file non è stato importato, correggi queste righe e riprova:",
     "transfer": "Trasferimento",
+    "recurring": "Registrato da un movimento ricorrente",
+    "due": {
+      "title": "Movimenti ricorrenti in scadenza",
+      "intro": "Registrali come movimenti, o saltali se non sono avvenuti.",
+      "register": "Registra",
+      "skip": "Salta",
+      "errors": {
+        "skip": "Impossibile saltare il movimento ricorrente: riprova più tardi."
+      }
+    },
     "filters": {
       "wallet": "Portafoglio",
       "kind": "Tipo",
@@ -152,6 +163,7 @@
       "noTags": "Nessun tag.",
       "noWallets": "I movimenti appartengono a un portafoglio, e non ci sono portafogli attivi.",
       "createWallet": "Crea un portafoglio",
+      "fromRecurring": "Questo movimento registra il movimento ricorrente in scadenza il {date}.",
       "save": "Salva",
       "cancel": "Annulla",
       "errors": {
@@ -183,6 +195,69 @@
         "load": "Impossibile caricare il trasferimento.",
         "invalid": "Controlla i campi qui sotto.",
         "generic": "Impossibile salvare il trasferimento: riprova più tardi."
+      }
+    }
+  },
+  "recurring": {
+    "title": "Movimenti ricorrenti",
+    "intro": "Non sono veri movimenti: intorno alla scadenza vengono suggeriti nell'elenco dei movimenti, per registrarli velocemente.",
+    "loading": "Caricamento…",
+    "empty": "Ancora nessun movimento ricorrente: crea il primo, ad esempio l'affitto o lo stipendio.",
+    "new": "Nuovo movimento ricorrente",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "confirmDelete": "Eliminare il movimento ricorrente {description}? I movimenti già registrati vengono mantenuti.",
+    "ended": "Terminato",
+    "frequencies": {
+      "weekly": "Ogni settimana | Ogni {n} settimane",
+      "monthly": "Ogni mese | Ogni {n} mesi",
+      "yearly": "Ogni anno | Ogni {n} anni"
+    },
+    "columns": {
+      "nextDate": "Prossima scadenza",
+      "description": "Descrizione",
+      "category": "Categoria",
+      "wallet": "Portafoglio",
+      "frequency": "Ripetizione",
+      "amount": "Importo",
+      "actions": "Azioni"
+    },
+    "errors": {
+      "load": "Impossibile caricare i movimenti ricorrenti: riprova più tardi.",
+      "delete": "Impossibile eliminare il movimento ricorrente: riprova più tardi."
+    },
+    "form": {
+      "titleNew": "Nuovo movimento ricorrente",
+      "titleEdit": "Modifica movimento ricorrente",
+      "fields": {
+        "kind": "Tipo",
+        "amount": "Importo",
+        "description": "Descrizione",
+        "repeat": "Ripeti ogni",
+        "interval": "Intervallo",
+        "frequency": "Unità",
+        "start_date": "Prima scadenza",
+        "end_date": "Data di fine (facoltativa)",
+        "wallet": "Portafoglio",
+        "category": "Categoria",
+        "tags": "Tag",
+        "notes": "Note"
+      },
+      "units": {
+        "weekly": "settimana | settimane",
+        "monthly": "mese | mesi",
+        "yearly": "anno | anni"
+      },
+      "next": "Prossima scadenza: {date}.",
+      "ended": "Non ci sono altre scadenze: sposta la data di fine per riprenderla.",
+      "noWallets": "I movimenti ricorrenti appartengono a un portafoglio, e non ci sono portafogli attivi.",
+      "createWallet": "Crea un portafoglio",
+      "save": "Salva",
+      "cancel": "Annulla",
+      "errors": {
+        "load": "Impossibile caricare il movimento ricorrente.",
+        "invalid": "Controlla i campi qui sotto.",
+        "generic": "Impossibile salvare il movimento ricorrente: riprova più tardi."
       }
     }
   },
@@ -366,10 +441,11 @@
     },
     "deleteData": {
       "title": "Elimina tutti i dati",
-      "description": "Elimina tutti i movimenti, i trasferimenti, i portafogli, le categorie e i tag. Gli utenti vengono mantenuti. L'operazione è irreversibile: se vuoi un backup, esporta prima i movimenti.",
+      "description": "Elimina tutti i movimenti, i trasferimenti, i movimenti ricorrenti, i portafogli, le categorie e i tag. Gli utenti vengono mantenuti. L'operazione è irreversibile: se vuoi un backup, esporta prima i movimenti.",
       "counts": {
         "transactions": "movimenti",
         "transfers": "trasferimenti",
+        "recurring_transactions": "movimenti ricorrenti",
         "wallets": "portafogli",
         "categories": "categorie",
         "tags": "tag"
@@ -379,7 +455,7 @@
       "confirmWord": "ELIMINA",
       "submit": "Elimina tutti i dati",
       "deleting": "Eliminazione…",
-      "done": "Eliminati: {transactions} movimenti, {transfers} trasferimenti, {wallets} portafogli, {categories} categorie, {tags} tag.",
+      "done": "Eliminati: {transactions} movimenti, {transfers} trasferimenti, {recurring_transactions} movimenti ricorrenti, {wallets} portafogli, {categories} categorie, {tags} tag.",
       "errors": {
         "delete": "Impossibile eliminare i dati: riprova più tardi."
       }

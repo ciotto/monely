@@ -1,12 +1,12 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
-import { ArrowLeftRight } from "@lucide/vue";
+import { ArrowLeftRight, Repeat } from "@lucide/vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 
 import { apiFetch } from "@/api/client";
 import CategoryIcon from "@/components/CategoryIcon.vue";
-import { formatAmount, formatDate } from "@/format";
+import { formatAmount, formatDate, today } from "@/format";
 
 const { t, locale } = useI18n();
 const route = useRoute();
@@ -38,6 +38,8 @@ const query = computed(() => {
   const params = new URLSearchParams(filterQuery.value).toString();
   return params ? `?${params}` : "";
 });
+// The occurrences of the recurring transactions due soon or overdue, suggested to be registered or skipped
+const due = ref([]);
 const error = ref(null);
 const filterErrors = ref([]);
 // The counts of the created objects after an import, or the errors of the rejected file
@@ -110,12 +112,24 @@ async function remove(transaction) {
   }
 }
 
+// Skipping moves on to the following occurrence, which can be due as well
+async function skip(item) {
+  error.value = null;
+  try {
+    await apiFetch(`/recurring-transactions/${item.id}/skip/`, { method: "POST" });
+    due.value = await apiFetch("/recurring-transactions/due/");
+  } catch {
+    error.value = "transactions.due.errors.skip";
+  }
+}
+
 async function load() {
   try {
-    [walletList.value, categoryList.value, tagList.value] = await Promise.all([
+    [walletList.value, categoryList.value, tagList.value, due.value] = await Promise.all([
       apiFetch("/wallets/"),
       apiFetch("/categories/"),
       apiFetch("/tags/"),
+      apiFetch("/recurring-transactions/due/"),
     ]);
   } catch {
     error.value = "transactions.errors.load";
@@ -213,6 +227,41 @@ onMounted(load);
         {{ $t("transactions.importCreated", imported) }}
       </template>
     </p>
+    <div v-if="due.length" data-due class="mt-6 rounded-lg border border-brand/30 bg-white p-4">
+      <h2 class="font-semibold">{{ $t("transactions.due.title") }}</h2>
+      <p class="text-sm text-slate-500">{{ $t("transactions.due.intro") }}</p>
+      <ul class="mt-2 divide-y divide-slate-100 text-sm">
+        <li v-for="item in due" :key="item.id" class="flex flex-wrap items-center gap-x-4 gap-y-1 py-2">
+          <span
+            class="w-28 whitespace-nowrap"
+            :class="item.next_date < today() ? 'font-medium text-expense' : 'text-slate-500'"
+          >
+            {{ formatDate(item.next_date, locale) }}
+          </span>
+          <span class="min-w-0 flex-1">
+            {{ item.description }}
+            <span class="text-slate-500">· {{ wallets[item.wallet].name }}</span>
+          </span>
+          <span
+            class="whitespace-nowrap tabular-nums"
+            :class="Number(item.amount) < 0 ? 'text-expense' : 'text-income'"
+          >
+            {{ formatAmount(item.amount, wallets[item.wallet].currency, locale) }}
+          </span>
+          <span class="whitespace-nowrap">
+            <RouterLink
+              :to="{ name: 'transaction-new', query: { ...filterQuery, recurring: item.id } }"
+              class="text-brand hover:text-brand-dark"
+            >
+              {{ $t("transactions.due.register") }}
+            </RouterLink>
+            <button type="button" name="skip" class="ml-3 text-slate-500 hover:underline" @click="skip(item)">
+              {{ $t("transactions.due.skip") }}
+            </button>
+          </span>
+        </li>
+      </ul>
+    </div>
     <p v-if="!transactions && !error && !filterErrors.length" class="mt-6 text-slate-500">
       {{ $t("transactions.loading") }}
     </p>
@@ -305,7 +354,18 @@ onMounted(load);
             <tr v-for="transaction in transactions" :key="transaction.id">
               <td class="px-4 py-2 whitespace-nowrap">{{ formatDate(transaction.date, locale) }}</td>
               <td class="px-4 py-2">
-                <span class="block" :title="transaction.notes">{{ transaction.description }}</span>
+                <span class="flex items-center gap-2">
+                  <span :title="transaction.notes">{{ transaction.description }}</span>
+                  <RouterLink
+                    v-if="transaction.recurring_transaction"
+                    :to="{ name: 'recurring-edit', params: { id: transaction.recurring_transaction } }"
+                    data-recurring
+                    class="text-slate-400 hover:text-brand"
+                    :title="$t('transactions.recurring')"
+                  >
+                    <Repeat class="size-4 shrink-0" :aria-label="$t('transactions.recurring')" />
+                  </RouterLink>
+                </span>
                 <span v-if="transaction.tags.length" class="mt-1 flex flex-wrap gap-1">
                   <span
                     v-for="id in transaction.tags"

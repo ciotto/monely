@@ -53,7 +53,7 @@ describe("App", () => {
 
       await openMenu(wrapper);
       expect(wrapper.find("header button[name=menu]").attributes("aria-expanded")).toBe("true");
-      expect(wrapper.find("header").text()).toContain("SettingsWalletsCategoriesTags");
+      expect(wrapper.find("header").text()).toContain("SettingsWalletsCategoriesTagsRecurring transactions");
       expect(wrapper.find("header").text()).not.toContain("Users");
       expect(wrapper.find("header a[href='/maintenance']").exists()).toBe(false);
     });

@@ -1,7 +1,9 @@
+import datetime
+
 from django.conf import settings
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.db import connection, transaction
-from django.db.models import Q
+from django.db.models import F, Q
 from django.http import FileResponse, Http404, HttpResponse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
@@ -27,14 +29,16 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from core.dashboard import build_dashboard
-from core.models import Category, Tag, Transaction, Transfer, User, Wallet
+from core.models import Category, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
 from core.serializers import (
+    RECURRING_ENDED_ERROR,
     TRANSFER_LEG_ERROR,
     AdminUserSerializer,
     CategorySerializer,
     DashboardFilterSerializer,
     LoginSerializer,
     OwnerSerializer,
+    RecurringTransactionSerializer,
     SetupSerializer,
     TagSerializer,
     TransactionFilterSerializer,
@@ -256,6 +260,48 @@ class TransferDetailView(RetrieveUpdateDestroyAPIView):
     serializer_class = TransferSerializer
 
 
+class RecurringTransactionListView(ListCreateAPIView):
+    queryset = RecurringTransaction.objects.prefetch_related("tags")
+    serializer_class = RecurringTransactionSerializer
+
+
+class RecurringTransactionDueView(ListAPIView):
+    """
+    The occurrences to register: they are suggested from a few days before their due date until they are registered or
+    skipped; the ones of the archived wallets are not.
+    """
+
+    serializer_class = RecurringTransactionSerializer
+    days_before = 7
+
+    def get_queryset(self):
+        return (
+            RecurringTransaction.objects.prefetch_related("tags")
+            .filter(next_date__lte=timezone.localdate() + datetime.timedelta(days=self.days_before))
+            .filter(Q(end_date=None) | Q(end_date__gte=F("next_date")))
+            .filter(wallet__is_archived=False)
+        )
+
+
+class RecurringTransactionDetailView(RetrieveUpdateDestroyAPIView):
+    queryset = RecurringTransaction.objects.prefetch_related("tags")
+    serializer_class = RecurringTransactionSerializer
+
+
+class RecurringTransactionSkipView(GenericAPIView):
+    """Skips the next occurrence without registering it, moving on to the following one."""
+
+    queryset = RecurringTransaction.objects.prefetch_related("tags")
+    serializer_class = RecurringTransactionSerializer
+
+    def post(self, request, pk):
+        instance = self.get_object()
+        if instance.is_ended:
+            raise serializers.ValidationError(RECURRING_ENDED_ERROR)
+        instance.advance()
+        return Response(self.get_serializer(instance).data)
+
+
 class DashboardView(APIView):
     def get(self, request):
         filters = DashboardFilterSerializer(data=request.query_params)
@@ -268,10 +314,11 @@ class MaintenanceDataView(APIView):
     """Counts the data of the instance, or deletes it all; the users are kept, so the admins can still log in."""
 
     permission_classes = [IsAdminUser]
-    # In deletion order: transactions protect their wallets
+    # In deletion order: transactions and recurring transactions protect their wallets
     models = {
         "transactions": Transaction,
         "transfers": Transfer,
+        "recurring_transactions": RecurringTransaction,
         "wallets": Wallet,
         "categories": Category,
         "tags": Tag,

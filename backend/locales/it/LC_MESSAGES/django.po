@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Monely\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 18:31+0000\n"
+"POT-Creation-Date: 2026-11-13 23:41+0000\n"
 "PO-Revision-Date: 2026-11-13 09:30+0000\n"
 "Last-Translator: Ciotto\n"
 "Language-Team: Italian\n"
@@ -27,159 +27,204 @@ msgstr "Permessi"
 msgid "Important dates"
 msgstr "Date importanti"
 
-#: core/models.py:17
+#: core/models.py:19
 msgid "The email must be set"
 msgstr "L'email è obbligatoria"
 
-#: core/models.py:34
+#: core/models.py:36
 msgid "Superuser must have is_staff=True."
 msgstr "Il superutente deve avere is_staff=True."
 
-#: core/models.py:36
+#: core/models.py:38
 msgid "Superuser must have is_superuser=True."
 msgstr "Il superutente deve avere is_superuser=True."
 
-#: core/models.py:43
+#: core/models.py:45
 msgid "email address"
 msgstr "indirizzo email"
 
-#: core/models.py:51
+#: core/models.py:53
 msgid "user"
 msgstr "utente"
 
-#: core/models.py:52
+#: core/models.py:54
 msgid "users"
 msgstr "utenti"
 
-#: core/models.py:61 core/models.py:84
+#: core/models.py:63 core/models.py:86
 msgid "name"
 msgstr "nome"
 
-#: core/models.py:63
+#: core/models.py:65
 msgid "currency"
 msgstr "valuta"
 
-#: core/models.py:66
+#: core/models.py:68
 msgid "Enter a three-letter ISO 4217 currency code, e.g. EUR."
 msgstr "Inserisci un codice valuta ISO 4217 di tre lettere, es. EUR."
 
-#: core/models.py:68
+#: core/models.py:70
 msgid "owners"
 msgstr "proprietari"
 
-#: core/models.py:69
+#: core/models.py:71
 msgid "archived"
 msgstr "archiviato"
 
-#: core/models.py:70 core/models.py:133 core/models.py:175
+#: core/models.py:72 core/models.py:135 core/models.py:177 core/models.py:232
 msgid "created at"
 msgstr "creato il"
 
-#: core/models.py:73 core/models.py:152
+#: core/models.py:75 core/models.py:154 core/models.py:210
 msgid "wallet"
 msgstr "portafoglio"
 
-#: core/models.py:74
+#: core/models.py:76
 msgid "wallets"
 msgstr "portafogli"
 
-#: core/models.py:86
+#: core/models.py:88
 msgid "color"
 msgstr "colore"
 
-#: core/models.py:89
+#: core/models.py:91
 msgid "Enter a hexadecimal color, e.g. #2563eb."
 msgstr "Inserisci un colore esadecimale, es. #2563eb."
 
-#: core/models.py:106
+#: core/models.py:108
 msgid "icon"
 msgstr "icona"
 
-#: core/models.py:109
+#: core/models.py:111
 msgid "Enter the name of an icon, e.g. shopping-cart."
 msgstr "Inserisci il nome di un'icona, es. shopping-cart."
 
-#: core/models.py:113 core/models.py:162
+#: core/models.py:115 core/models.py:164 core/models.py:220
 msgid "category"
 msgstr "categoria"
 
-#: core/models.py:114
+#: core/models.py:116
 msgid "categories"
 msgstr "categorie"
 
-#: core/models.py:121
+#: core/models.py:123
 msgid "tag"
 msgstr "tag"
 
-#: core/models.py:122 core/models.py:164
+#: core/models.py:124 core/models.py:166 core/models.py:222
 msgid "tags"
 msgstr "tag"
 
-#: core/models.py:136 core/models.py:173
+#: core/models.py:138 core/models.py:175
 msgid "transfer"
 msgstr "trasferimento"
 
-#: core/models.py:137
+#: core/models.py:139
 msgid "transfers"
 msgstr "trasferimenti"
 
-#: core/models.py:153
+#: core/models.py:155
 msgid "date"
 msgstr "data"
 
-#: core/models.py:154
+#: core/models.py:156 core/models.py:212
 msgid "amount"
 msgstr "importo"
 
-#: core/models.py:155
+#: core/models.py:157 core/models.py:213
 msgid "description"
 msgstr "descrizione"
 
-#: core/models.py:165
+#: core/models.py:167 core/models.py:223
 msgid "notes"
 msgstr "note"
 
-#: core/models.py:178
+#: core/models.py:180
 msgid "transaction"
 msgstr "movimento"
 
-#: core/models.py:179
+#: core/models.py:181
 msgid "transactions"
 msgstr "movimenti"
 
+#: core/models.py:204
+msgid "weekly"
+msgstr "settimanale"
+
+#: core/models.py:205
+msgid "monthly"
+msgstr "mensile"
+
+#: core/models.py:206
+msgid "yearly"
+msgstr "annuale"
+
+#: core/models.py:224
+msgid "frequency"
+msgstr "frequenza"
+
+#: core/models.py:226
+msgid "interval"
+msgstr "intervallo"
+
+#: core/models.py:228
+msgid "start date"
+msgstr "data di inizio"
+
+#: core/models.py:229
+msgid "end date"
+msgstr "data di fine"
+
+#: core/models.py:231
+msgid "next date"
+msgstr "prossima scadenza"
+
+#: core/models.py:235
+msgid "recurring transaction"
+msgstr "movimento ricorrente"
+
+#: core/models.py:236
+msgid "recurring transactions"
+msgstr "movimenti ricorrenti"
+
 #: core/serializers.py:13
 msgid "This transaction belongs to a transfer: edit the transfer instead."
-msgstr "Questo movimento fa parte di un trasferimento: modifica il trasferimento."
+msgstr ""
+"Questo movimento fa parte di un trasferimento: modifica il trasferimento."
 
-#: core/serializers.py:64
+#: core/serializers.py:14
+msgid "This recurring transaction has ended."
+msgstr "Questo movimento ricorrente è terminato."
+
+#: core/serializers.py:65
 msgid "This name is already in use."
 msgstr "Questo nome è già utilizzato."
 
-#: core/serializers.py:106 core/serializers.py:158 core/transactions_csv.py:193
+#: core/serializers.py:88 core/serializers.py:231 core/transactions_csv.py:193
 msgid "This wallet is archived."
 msgstr "Questo portafoglio è archiviato."
 
-#: core/serializers.py:111 core/transactions_csv.py:60
+#: core/serializers.py:93 core/transactions_csv.py:60
 msgid "The amount cannot be zero."
 msgstr "L'importo non può essere zero."
 
-#: core/serializers.py:160
-msgid "Choose a wallet different from the source one."
-msgstr "Scegli un portafoglio diverso da quello di origine."
-
-#: core/serializers.py:162
-msgid "The wallets must use the same currency."
-msgstr "I portafogli devono usare la stessa valuta."
-
-#: core/serializers.py:203
+#: core/serializers.py:173 core/serializers.py:286
 msgid "The end date cannot precede the start date."
 msgstr "La data di fine non può precedere la data di inizio."
 
-#: core/serializers.py:248
+#: core/serializers.py:233
+msgid "Choose a wallet different from the source one."
+msgstr "Scegli un portafoglio diverso da quello di origine."
+
+#: core/serializers.py:235
+msgid "The wallets must use the same currency."
+msgstr "I portafogli devono usare la stessa valuta."
+
+#: core/serializers.py:331
 msgid "You cannot change this on your own account."
 msgstr "Non puoi modificare questo campo sul tuo account."
 
-#: core/serializers.py:300
+#: core/serializers.py:383
 msgid "Invalid email or password."
 msgstr "Email o password non valide."
 
@@ -231,7 +276,7 @@ msgstr "Più di un portafoglio ha questo nome."
 msgid "The wallet uses %(currency)s."
 msgstr "Il portafoglio usa %(currency)s."
 
-#: core/views.py:122
+#: core/views.py:128
 msgid "You cannot delete your own account."
 msgstr "Non puoi eliminare il tuo account."
 

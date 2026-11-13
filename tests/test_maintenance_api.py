@@ -3,9 +3,9 @@ import datetime
 import pytest
 from django.urls import reverse
 
-from core.models import Category, Tag, Transaction, Transfer, User, Wallet
+from core.models import Category, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
 
-EMPTY = {"transactions": 0, "transfers": 0, "wallets": 0, "categories": 0, "tags": 0}
+EMPTY = {"transactions": 0, "transfers": 0, "recurring_transactions": 0, "wallets": 0, "categories": 0, "tags": 0}
 
 
 @pytest.fixture
@@ -35,6 +35,14 @@ def data(user):
         Transaction.objects.create(
             wallet=wallet, date=datetime.date(2026, 11, 2), amount=amount, description="ATM", transfer=transfer
         )
+    recurring = RecurringTransaction.objects.create(
+        wallet=bank,
+        amount=-800,
+        description="Rent",
+        start_date=datetime.date(2026, 11, 1),
+        next_date=datetime.date(2026, 12, 1),
+    )
+    recurring.tags.add(tag)
 
 
 @pytest.mark.django_db
@@ -45,13 +53,27 @@ class TestMaintenanceDataView:
         response = admin_client.get(self.url)
 
         assert response.status_code == 200
-        assert response.json() == {"transactions": 3, "transfers": 1, "wallets": 2, "categories": 1, "tags": 1}
+        assert response.json() == {
+            "transactions": 3,
+            "transfers": 1,
+            "recurring_transactions": 1,
+            "wallets": 2,
+            "categories": 1,
+            "tags": 1,
+        }
 
     def test_delete(self, admin_client, user, data):
         response = admin_client.delete(self.url)
 
         assert response.status_code == 200
-        assert response.json() == {"transactions": 3, "transfers": 1, "wallets": 2, "categories": 1, "tags": 1}
+        assert response.json() == {
+            "transactions": 3,
+            "transfers": 1,
+            "recurring_transactions": 1,
+            "wallets": 2,
+            "categories": 1,
+            "tags": 1,
+        }
         assert admin_client.get(self.url).json() == EMPTY
         # The users are kept
         assert User.objects.count() == 2

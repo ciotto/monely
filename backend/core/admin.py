@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 
-from core.models import Category, Tag, Transaction, Transfer, User, Wallet
+from core.models import Category, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
 
 
 @admin.register(User)
@@ -45,15 +45,15 @@ class CategoryAdmin(LabelAdmin):
 class TransactionAdmin(admin.ModelAdmin):
     list_display = ("date", "description", "amount", "wallet", "category", "transfer")
     list_filter = ("wallet", "category", "tags")
-    # The transactions of a transfer are created and kept consistent by the API
-    readonly_fields = ("transfer",)
+    # The transactions of a transfer, and the occurrences of a recurring transaction, are kept consistent by the API
+    readonly_fields = ("transfer", "recurring_transaction")
     search_fields = ("description", "notes")
     date_hierarchy = "date"
     filter_horizontal = ("tags",)
     list_select_related = ("wallet", "category")
 
 
-class TransferTransactionInline(admin.TabularInline):
+class ReadOnlyTransactionInline(admin.TabularInline):
     model = Transaction
     fields = ("date", "wallet", "amount", "description")
     readonly_fields = fields
@@ -67,4 +67,15 @@ class TransferTransactionInline(admin.TabularInline):
 @admin.register(Transfer)
 class TransferAdmin(admin.ModelAdmin):
     list_display = ("id", "created_at")
-    inlines = (TransferTransactionInline,)
+    inlines = (ReadOnlyTransactionInline,)
+
+
+@admin.register(RecurringTransaction)
+class RecurringTransactionAdmin(admin.ModelAdmin):
+    list_display = ("description", "amount", "wallet", "category", "frequency", "interval", "next_date", "end_date")
+    list_filter = ("frequency", "wallet", "category", "tags")
+    search_fields = ("description", "notes")
+    filter_horizontal = ("tags",)
+    list_select_related = ("wallet", "category")
+    # The transactions that registered its occurrences
+    inlines = (ReadOnlyTransactionInline,)

@@ -38,6 +38,10 @@ shows where the money goes. It is designed to be used by a single household, wit
   category and any number of tags.
 - **Transfer**: moves money between two wallets with the same currency, as a pair of transactions (outgoing and
   incoming) that share date, amount, description and notes and are edited and deleted together.
+- **Recurring transaction**: a transaction that repeats every N weeks, months or years from a first due date, until an
+  optional end date, with the same fields as a transaction (wallet, signed amount, description, category, tags, notes).
+  It is not a real transaction: it only keeps the next due date, which moves on when an occurrence is registered or
+  skipped. The transactions that register its occurrences keep a link to it, which is cleared if it is deleted.
 
 ### Key decisions
 
@@ -56,12 +60,15 @@ shows where the money goes. It is designed to be used by a single household, wit
 - **Transactions**: create, edit and delete transactions; list them 500 at a time with filters (wallet,
   type: income, expenses or transfers, date range, category or no category, tags).
 - **Transfers**: move money between two wallets; both transactions are listed with the others.
+- **Recurring transactions**: create, edit and delete them; from 7 days before the due date until they are handled, the
+  occurrences are suggested above the transaction list, to register them with the form already filled in (date, amount
+  and the rest can still be changed) or to skip them. A monthly one on the 31st falls on the last day of shorter months.
 - **CSV export/import**: export the filtered transactions to CSV (`date,wallet,currency,amount,description,category,
   tags,notes,transfer`, tags separated by `|`) and import them back; wallets, categories and tags are matched by name
   (case-insensitive) and created when missing, the two rows of a transfer share the value of the `transfer` column,
   and a file with any invalid row is rejected as a whole.
 - **Maintenance** (admins only): technical tools, starting with deleting all the data (transactions, transfers,
-  wallets, categories and tags; the users are kept) after typing a confirmation word.
+  recurring transactions, wallets, categories and tags; the users are kept) after typing a confirmation word.
 - **Monthly dashboard**: income, expenses and balance for the selected month, breakdown by category, and comparison with
   the same month of the previous year.
 
@@ -86,7 +93,7 @@ Tags were initially in this list and have been moved into the data model.
 - [x] **M4 – Dashboard**: aggregations, charts, month selector.
 - [x] **M5 – Polish for v0.1**: i18n, installation docs, backup/CSV export, published Docker image.
 - [x] **M6 – v0.2**: transfers between wallets.
-- [ ] **M7 – v0.3**: recurring transactions.
+- [x] **M7 – v0.3**: recurring transactions.
 - [ ] **M8 – v0.4**: budgeting by category and goals.
 - [ ] **M9 – v0.5**: family balance: identify shared expenses and compute how much each family member has to transfer to
   the joint account to cover them.

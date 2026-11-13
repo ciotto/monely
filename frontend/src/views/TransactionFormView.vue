@@ -1,14 +1,21 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 
 import { apiFetch } from "@/api/client";
-import { today } from "@/format";
+import { formatDate, today } from "@/format";
 
+const { locale } = useI18n();
 const route = useRoute();
 const router = useRouter();
 // Editing an existing transaction when the route has an id, creating a new one otherwise
 const transactionId = route.params.id ? Number(route.params.id) : null;
+// A new transaction can register the next occurrence of a recurring transaction, which fills the form
+const recurringId = transactionId === null && route.query.recurring ? Number(route.query.recurring) : null;
+const recurringDate = ref(null);
+// Back to the list with the filters it was opened from
+const listQuery = Object.fromEntries(Object.entries(route.query).filter(([name]) => name !== "recurring"));
 // The amount is entered without sign: the kind tells expenses (negative) from incomes (positive)
 const form = reactive({
   wallet: "",
@@ -32,27 +39,31 @@ const title = computed(() => (transactionId === null ? "transactions.form.titleN
 
 onMounted(async () => {
   try {
-    const [walletList, categoryList, tagList, transaction] = await Promise.all([
+    const [walletList, categoryList, tagList, transaction, recurring] = await Promise.all([
       apiFetch("/wallets/"),
       apiFetch("/categories/"),
       apiFetch("/tags/"),
       transactionId === null ? null : apiFetch(`/transactions/${transactionId}/`),
+      recurringId === null ? null : apiFetch(`/recurring-transactions/${recurringId}/`),
     ]);
     // Archived wallets do not receive new transactions, but keep the ones they already have
     wallets.value = walletList.filter((wallet) => !wallet.is_archived || wallet.id === transaction?.wallet);
     categories.value = categoryList;
     tags.value = tagList;
-    if (transaction) {
-      const amount = Number(transaction.amount);
+    // The occurrence of a recurring transaction is due on its next date
+    const source = transaction ?? (recurring && { ...recurring, date: recurring.next_date });
+    recurringDate.value = recurring?.next_date ?? null;
+    if (source) {
+      const amount = Number(source.amount);
       Object.assign(form, {
-        wallet: transaction.wallet,
+        wallet: source.wallet,
         kind: amount < 0 ? "expense" : "income",
         amount: Math.abs(amount).toFixed(2),
-        date: transaction.date,
-        description: transaction.description,
-        category: transaction.category ?? "",
-        tags: transaction.tags,
-        notes: transaction.notes,
+        date: source.date,
+        description: source.description,
+        category: source.category ?? "",
+        tags: source.tags,
+        notes: source.notes,
       });
     } else if (wallets.value.length === 1) {
       form.wallet = wallets.value[0].id;
@@ -73,14 +84,16 @@ async function submit() {
     amount: kind === "expense" ? `-${amount}` : String(amount),
     category: category === "" ? null : category,
   };
+  if (recurringId !== null) {
+    body.recurring_transaction = recurringId;
+  }
   try {
     if (transactionId !== null) {
       await apiFetch(`/transactions/${transactionId}/`, { method: "PATCH", body });
     } else {
       await apiFetch("/transactions/", { method: "POST", body });
     }
-    // Back to the list with the filters it was opened from
-    await router.push({ name: "transactions", query: route.query });
+    await router.push({ name: "transactions", query: listQuery });
   } catch (e) {
     if (e.status === 400) {
       fieldErrors.value = e.data;
@@ -115,6 +128,9 @@ async function submit() {
       @submit.prevent="submit"
     >
       <p v-if="error" role="alert" class="rounded bg-red-50 px-3 py-2 text-sm text-expense">{{ $t(error) }}</p>
+      <p v-if="recurringDate" data-recurring class="text-sm text-slate-500">
+        {{ $t("transactions.form.fromRecurring", { date: formatDate(recurringDate, locale) }) }}
+      </p>
       <fieldset class="grid grid-cols-2 gap-2">
         <legend class="sr-only">{{ $t("transactions.form.fields.kind") }}</legend>
         <label
@@ -250,7 +266,7 @@ async function submit() {
           {{ $t("transactions.form.save") }}
         </button>
         <RouterLink
-          :to="{ name: 'transactions', query: route.query }"
+          :to="{ name: 'transactions', query: listQuery }"
           class="flex-1 rounded border border-slate-300 px-4 py-2 text-center font-medium hover:border-brand"
         >
           {{ $t("transactions.form.cancel") }}

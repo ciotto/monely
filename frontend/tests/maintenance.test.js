@@ -6,8 +6,8 @@ import { setLocale } from "@/i18n";
 
 import { ADMIN, mockFetch, mountAt, USER } from "./helpers";
 
-const COUNTS = { transactions: 120, transfers: 4, wallets: 3, categories: 12, tags: 2 };
-const EMPTY = { transactions: 0, transfers: 0, wallets: 0, categories: 0, tags: 0 };
+const COUNTS = { transactions: 120, transfers: 4, recurring_transactions: 5, wallets: 3, categories: 12, tags: 2 };
+const EMPTY = { transactions: 0, transfers: 0, recurring_transactions: 0, wallets: 0, categories: 0, tags: 0 };
 
 // Mounted apps would otherwise keep reacting to the shared auth state of the next tests
 enableAutoUnmount(afterEach);
@@ -31,7 +31,14 @@ describe("maintenance", () => {
     await flushPromises();
     expect(router.currentRoute.value.name).toBe("maintenance");
     expect(wrapper.find("h1").text()).toBe("Maintenance");
-    expect(counts(wrapper)).toEqual(["120transactions", "4transfers", "3wallets", "12categories", "2tags"]);
+    expect(counts(wrapper)).toEqual([
+      "120transactions",
+      "4transfers",
+      "5recurring transactions",
+      "3wallets",
+      "12categories",
+      "2tags",
+    ]);
   });
 
   it("deletes all the data once confirmed", async () => {
@@ -51,9 +58,16 @@ describe("maintenance", () => {
     await flushPromises();
     expect(fetch).toHaveBeenLastCalledWith("/api/maintenance/data/", expect.objectContaining({ method: "DELETE" }));
     expect(wrapper.find("[role=status]").text()).toBe(
-      "Deleted: 120 transactions, 4 transfers, 3 wallets, 12 categories, 2 tags.",
+      "Deleted: 120 transactions, 4 transfers, 5 recurring transactions, 3 wallets, 12 categories, 2 tags.",
     );
-    expect(counts(wrapper)).toEqual(["0transactions", "0transfers", "0wallets", "0categories", "0tags"]);
+    expect(counts(wrapper)).toEqual([
+      "0transactions",
+      "0transfers",
+      "0recurring transactions",
+      "0wallets",
+      "0categories",
+      "0tags",
+    ]);
     expect(wrapper.find("form").exists()).toBe(false);
     expect(wrapper.text()).toContain("There is no data to delete.");
   });

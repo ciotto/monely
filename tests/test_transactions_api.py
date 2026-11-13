@@ -64,6 +64,7 @@ class TestTransactionListView:
             "tags": [tags[1].pk, tags[0].pk],
             "notes": "November salary",
             "transfer": None,
+            "recurring_transaction": None,
             "created_at": transaction.created_at.isoformat().replace("+00:00", "Z"),
         }
 

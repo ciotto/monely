@@ -9,6 +9,7 @@
     "logout": "Log out",
     "maintenance": "Maintenance",
     "menu": "Account and settings",
+    "recurring": "Recurring transactions",
     "settings": "Settings",
     "tags": "Tags",
     "transactions": "Transactions",
@@ -102,6 +103,16 @@
     "importCreated": "New: {wallets} wallets, {categories} categories, {tags} tags.",
     "importFailed": "The file was not imported, fix these rows and try again:",
     "transfer": "Transfer",
+    "recurring": "Registered from a recurring transaction",
+    "due": {
+      "title": "Due recurring transactions",
+      "intro": "Register them as transactions, or skip them if they did not happen.",
+      "register": "Register",
+      "skip": "Skip",
+      "errors": {
+        "skip": "Unable to skip the recurring transaction: try again later."
+      }
+    },
     "filters": {
       "wallet": "Wallet",
       "kind": "Type",
@@ -152,6 +163,7 @@
       "noTags": "No tags yet.",
       "noWallets": "Transactions belong to a wallet, and there are no active wallets.",
       "createWallet": "Create a wallet",
+      "fromRecurring": "This transaction registers the recurring transaction due on {date}.",
       "save": "Save",
       "cancel": "Cancel",
       "errors": {
@@ -183,6 +195,69 @@
         "load": "Unable to load the transfer.",
         "invalid": "Check the fields below.",
         "generic": "Unable to save the transfer: try again later."
+      }
+    }
+  },
+  "recurring": {
+    "title": "Recurring transactions",
+    "intro": "They are not real transactions: around their due date they are suggested in the transaction list, to register them quickly.",
+    "loading": "Loading…",
+    "empty": "No recurring transactions yet: create the first one, e.g. the rent or the salary.",
+    "new": "New recurring transaction",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirmDelete": "Delete the recurring transaction {description}? The transactions already registered are kept.",
+    "ended": "Ended",
+    "frequencies": {
+      "weekly": "Every week | Every {n} weeks",
+      "monthly": "Every month | Every {n} months",
+      "yearly": "Every year | Every {n} years"
+    },
+    "columns": {
+      "nextDate": "Next due date",
+      "description": "Description",
+      "category": "Category",
+      "wallet": "Wallet",
+      "frequency": "Repeats",
+      "amount": "Amount",
+      "actions": "Actions"
+    },
+    "errors": {
+      "load": "Unable to load the recurring transactions: try again later.",
+      "delete": "Unable to delete the recurring transaction: try again later."
+    },
+    "form": {
+      "titleNew": "New recurring transaction",
+      "titleEdit": "Edit recurring transaction",
+      "fields": {
+        "kind": "Type",
+        "amount": "Amount",
+        "description": "Description",
+        "repeat": "Repeat every",
+        "interval": "Interval",
+        "frequency": "Unit",
+        "start_date": "First due date",
+        "end_date": "End date (optional)",
+        "wallet": "Wallet",
+        "category": "Category",
+        "tags": "Tags",
+        "notes": "Notes"
+      },
+      "units": {
+        "weekly": "week | weeks",
+        "monthly": "month | months",
+        "yearly": "year | years"
+      },
+      "next": "Next due date: {date}.",
+      "ended": "There are no more occurrences: move the end date to resume it.",
+      "noWallets": "Recurring transactions belong to a wallet, and there are no active wallets.",
+      "createWallet": "Create a wallet",
+      "save": "Save",
+      "cancel": "Cancel",
+      "errors": {
+        "load": "Unable to load the recurring transaction.",
+        "invalid": "Check the fields below.",
+        "generic": "Unable to save the recurring transaction: try again later."
       }
     }
   },
@@ -366,10 +441,11 @@
     },
     "deleteData": {
       "title": "Delete all data",
-      "description": "Deletes every transaction, transfer, wallet, category and tag. The users are kept. This cannot be undone: export the transactions first if you want a backup.",
+      "description": "Deletes every transaction, transfer, recurring transaction, wallet, category and tag. The users are kept. This cannot be undone: export the transactions first if you want a backup.",
       "counts": {
         "transactions": "transactions",
         "transfers": "transfers",
+        "recurring_transactions": "recurring transactions",
         "wallets": "wallets",
         "categories": "categories",
         "tags": "tags"
@@ -379,7 +455,7 @@
       "confirmWord": "DELETE",
       "submit": "Delete all data",
       "deleting": "Deleting…",
-      "done": "Deleted: {transactions} transactions, {transfers} transfers, {wallets} wallets, {categories} categories, {tags} tags.",
+      "done": "Deleted: {transactions} transactions, {transfers} transfers, {recurring_transactions} recurring transactions, {wallets} wallets, {categories} categories, {tags} tags.",
       "errors": {
         "delete": "Unable to delete the data: try again later."
       }

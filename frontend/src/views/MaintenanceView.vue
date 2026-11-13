@@ -48,7 +48,7 @@ onMounted(async () => {
     <div v-if="counts" class="mt-6 rounded-lg border border-red-200 bg-white p-6">
       <h2 class="text-lg font-semibold text-expense">{{ $t("maintenance.deleteData.title") }}</h2>
       <p class="mt-2 text-sm">{{ $t("maintenance.deleteData.description") }}</p>
-      <ul data-counts class="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-5">
+      <ul data-counts class="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
         <li v-for="(count, name) in counts" :key="name" class="rounded bg-slate-50 px-3 py-2">
           <span class="block text-lg font-semibold tabular-nums">{{ count }}</span>
           <span class="text-slate-500">{{ $t(`maintenance.deleteData.counts.${name}`) }}</span>

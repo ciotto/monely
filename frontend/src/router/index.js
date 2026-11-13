@@ -5,6 +5,8 @@ import DashboardView from "@/views/DashboardView.vue";
 import LabelsView from "@/views/LabelsView.vue";
 import LoginView from "@/views/LoginView.vue";
 import MaintenanceView from "@/views/MaintenanceView.vue";
+import RecurringFormView from "@/views/RecurringFormView.vue";
+import RecurringView from "@/views/RecurringView.vue";
 import SetupView from "@/views/SetupView.vue";
 import TransactionFormView from "@/views/TransactionFormView.vue";
 import TransactionsView from "@/views/TransactionsView.vue";
@@ -23,6 +25,9 @@ const routes = [
   { path: "/transactions/:id(\\d+)", name: "transaction-edit", component: TransactionFormView },
   { path: "/transfers/new", name: "transfer-new", component: TransferFormView },
   { path: "/transfers/:id(\\d+)", name: "transfer-edit", component: TransferFormView },
+  { path: "/recurring", name: "recurring", component: RecurringView, meta: { settings: true } },
+  { path: "/recurring/new", name: "recurring-new", component: RecurringFormView, meta: { settings: true } },
+  { path: "/recurring/:id(\\d+)", name: "recurring-edit", component: RecurringFormView, meta: { settings: true } },
   { path: "/wallets", name: "wallets", component: WalletsView, meta: { settings: true } },
   { path: "/wallets/new", name: "wallet-new", component: WalletFormView, meta: { settings: true } },
   { path: "/wallets/:id(\\d+)", name: "wallet-edit", component: WalletFormView, meta: { settings: true } },

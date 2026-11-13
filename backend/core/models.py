@@ -1,8 +1,10 @@
+import calendar
+import datetime
 from operator import attrgetter
 
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
-from django.core.validators import RegexValidator
+from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.db.models.functions import Lower
 from django.utils.functional import cached_property
@@ -172,6 +174,15 @@ class Transaction(models.Model):
         related_name="transactions",
         verbose_name=_("transfer"),
     )
+    # Set when the transaction registers an occurrence of a recurring transaction
+    recurring_transaction = models.ForeignKey(
+        "RecurringTransaction",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="transactions",
+        verbose_name=_("recurring transaction"),
+    )
     created_at = models.DateTimeField(_("created at"), auto_now_add=True)
 
     class Meta:
@@ -181,3 +192,85 @@ class Transaction(models.Model):
 
     def __str__(self):
         return f"{self.date} {self.description} {self.amount}"
+
+
+def add_months(day, months):
+    """Moves a date by whole months; the day is clamped to the end of the shorter months (e.g. Jan 31 -> Feb 28)."""
+    year, month = divmod(day.year * 12 + day.month - 1 + months, 12)
+    month += 1
+    return day.replace(year=year, month=month, day=min(day.day, calendar.monthrange(year, month)[1]))
+
+
+class RecurringTransaction(models.Model):
+    """
+    A transaction that repeats on a schedule (e.g. rent, salary, subscriptions).
+
+    It is not a real transaction, so the balances and the reports ignore it: its occurrences are suggested around their
+    due date, and each one is either registered as a transaction or skipped, which moves on to the following one.
+    """
+
+    class Frequency(models.TextChoices):
+        WEEKLY = "weekly", _("weekly")
+        MONTHLY = "monthly", _("monthly")
+        YEARLY = "yearly", _("yearly")
+
+    # Wallets are archived instead of deleted, like for the transactions
+    wallet = models.ForeignKey(
+        Wallet, on_delete=models.PROTECT, related_name="recurring_transactions", verbose_name=_("wallet")
+    )
+    amount = models.DecimalField(_("amount"), max_digits=12, decimal_places=2)
+    description = models.CharField(_("description"), max_length=200)
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="recurring_transactions",
+        verbose_name=_("category"),
+    )
+    tags = models.ManyToManyField(Tag, blank=True, related_name="recurring_transactions", verbose_name=_("tags"))
+    notes = models.TextField(_("notes"), blank=True)
+    frequency = models.CharField(_("frequency"), max_length=10, choices=Frequency, default=Frequency.MONTHLY)
+    # Repeats every `interval` weeks, months or years, e.g. 3 months for a quarterly bill
+    interval = models.PositiveSmallIntegerField(_("interval"), default=1, validators=[MinValueValidator(1)])
+    # The first occurrence, which anchors the others: a monthly one on the 31st falls on the last day of shorter months
+    start_date = models.DateField(_("start date"))
+    end_date = models.DateField(_("end date"), null=True, blank=True)
+    # The occurrences before this one have already been registered or skipped
+    next_date = models.DateField(_("next date"))
+    created_at = models.DateTimeField(_("created at"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("recurring transaction")
+        verbose_name_plural = _("recurring transactions")
+        ordering = ("next_date", "id")
+
+    def __str__(self):
+        return f"{self.description} {self.amount}"
+
+    @property
+    def is_ended(self):
+        return self.end_date is not None and self.next_date > self.end_date
+
+    def occurrence(self, index):
+        """The date of the occurrence `index`, starting from 0."""
+        if self.frequency == self.Frequency.WEEKLY:
+            return self.start_date + datetime.timedelta(weeks=index * self.interval)
+        months = index * self.interval * (12 if self.frequency == self.Frequency.YEARLY else 1)
+        return add_months(self.start_date, months)
+
+    def occurrence_after(self, date):
+        """The first occurrence after `date`."""
+        index = 0
+        while self.occurrence(index) <= date:
+            index += 1
+        return self.occurrence(index)
+
+    def reschedule(self):
+        """After a change of the schedule, the next occurrence is the first one not before the current next date."""
+        self.next_date = self.occurrence_after(self.next_date - datetime.timedelta(days=1))
+
+    def advance(self):
+        """Moves on to the following occurrence, once the next one has been registered or skipped."""
+        self.next_date = self.occurrence_after(self.next_date)
+        self.save(update_fields=["next_date"])

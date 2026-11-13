@@ -7,10 +7,11 @@ from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from core.models import Category, Tag, Transaction, Transfer, User, Wallet
+from core.models import Category, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
 
 # The transactions of a transfer change only through the transfer, which keeps them consistent
 TRANSFER_LEG_ERROR = _("This transaction belongs to a transfer: edit the transfer instead.")
+RECURRING_ENDED_ERROR = _("This recurring transaction has ended.")
 
 
 def check_password(password, **user_fields):
@@ -76,9 +77,24 @@ class TagSerializer(LabelSerializer):
         model = Tag
 
 
-class TransactionSerializer(serializers.ModelSerializer):
+class MovementSerializer(serializers.ModelSerializer):
+    """The fields shared by the transactions and the recurring transactions."""
+
     tags = serializers.PrimaryKeyRelatedField(many=True, required=False, queryset=Tag.objects.all())
 
+    def validate_wallet(self, value):
+        # Archived wallets keep their transactions, but do not receive new ones
+        if value.is_archived and (self.instance is None or self.instance.wallet != value):
+            raise serializers.ValidationError(_("This wallet is archived."))
+        return value
+
+    def validate_amount(self, value):
+        if value == 0:
+            raise serializers.ValidationError(_("The amount cannot be zero."))
+        return value
+
+
+class TransactionSerializer(MovementSerializer):
     class Meta:
         model = Transaction
         fields = (
@@ -91,25 +107,77 @@ class TransactionSerializer(serializers.ModelSerializer):
             "tags",
             "notes",
             "transfer",
+            "recurring_transaction",
             "created_at",
         )
         read_only_fields = ("transfer", "created_at")
+
+    def get_fields(self):
+        fields = super().get_fields()
+        # A new transaction can register the next occurrence of a recurring transaction, which then moves on
+        if self.instance is not None:
+            fields["recurring_transaction"].read_only = True
+        return fields
 
     def validate(self, attrs):
         if self.instance is not None and self.instance.transfer_id is not None:
             raise serializers.ValidationError(TRANSFER_LEG_ERROR)
         return attrs
 
-    def validate_wallet(self, value):
-        # Archived wallets keep their transactions, but do not receive new ones
-        if value.is_archived and (self.instance is None or self.instance.wallet != value):
-            raise serializers.ValidationError(_("This wallet is archived."))
+    def validate_recurring_transaction(self, value):
+        if value is not None and value.is_ended:
+            raise serializers.ValidationError(RECURRING_ENDED_ERROR)
         return value
 
-    def validate_amount(self, value):
-        if value == 0:
-            raise serializers.ValidationError(_("The amount cannot be zero."))
-        return value
+    def create(self, validated_data):
+        with transaction.atomic():
+            instance = super().create(validated_data)
+            if instance.recurring_transaction is not None:
+                instance.recurring_transaction.advance()
+        return instance
+
+
+class RecurringTransactionSerializer(MovementSerializer):
+    is_ended = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = RecurringTransaction
+        fields = (
+            "id",
+            "wallet",
+            "amount",
+            "description",
+            "category",
+            "tags",
+            "notes",
+            "frequency",
+            "interval",
+            "start_date",
+            "end_date",
+            "next_date",
+            "is_ended",
+            "created_at",
+        )
+        read_only_fields = ("next_date", "created_at")
+
+    def validate(self, attrs):
+        # A partial update keeps the other dates
+        start_date = attrs.get("start_date", getattr(self.instance, "start_date", None))
+        end_date = attrs.get("end_date", getattr(self.instance, "end_date", None))
+        if end_date is not None and end_date < start_date:
+            raise serializers.ValidationError({"end_date": _("The end date cannot precede the start date.")})
+        return attrs
+
+    def create(self, validated_data):
+        validated_data["next_date"] = validated_data["start_date"]
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data)
+        # A new schedule keeps the occurrences already registered or skipped
+        instance.reschedule()
+        instance.save(update_fields=["next_date"])
+        return instance
 
 
 class TransferSerializer(serializers.Serializer):
