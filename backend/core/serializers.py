@@ -1,10 +1,16 @@
+from decimal import Decimal
+
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from core.models import Category, Tag, Transaction, User, Wallet
+from core.models import Category, Tag, Transaction, Transfer, User, Wallet
+
+# The transactions of a transfer change only through the transfer, which keeps them consistent
+TRANSFER_LEG_ERROR = _("This transaction belongs to a transfer: edit the transfer instead.")
 
 
 def check_password(password, **user_fields):
@@ -75,8 +81,24 @@ class TransactionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Transaction
-        fields = ("id", "wallet", "date", "amount", "description", "category", "tags", "notes", "created_at")
-        read_only_fields = ("created_at",)
+        fields = (
+            "id",
+            "wallet",
+            "date",
+            "amount",
+            "description",
+            "category",
+            "tags",
+            "notes",
+            "transfer",
+            "created_at",
+        )
+        read_only_fields = ("transfer", "created_at")
+
+    def validate(self, attrs):
+        if self.instance is not None and self.instance.transfer_id is not None:
+            raise serializers.ValidationError(TRANSFER_LEG_ERROR)
+        return attrs
 
     def validate_wallet(self, value):
         # Archived wallets keep their transactions, but do not receive new ones
@@ -88,6 +110,83 @@ class TransactionSerializer(serializers.ModelSerializer):
         if value == 0:
             raise serializers.ValidationError(_("The amount cannot be zero."))
         return value
+
+
+class TransferSerializer(serializers.Serializer):
+    """A transfer as a single movement of a positive amount, saved as its two transactions."""
+
+    id = serializers.IntegerField(read_only=True)
+    from_wallet = serializers.PrimaryKeyRelatedField(queryset=Wallet.objects.all())
+    to_wallet = serializers.PrimaryKeyRelatedField(queryset=Wallet.objects.all())
+    date = serializers.DateField()
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal("0.01"))
+    description = serializers.CharField(max_length=Transaction._meta.get_field("description").max_length)
+    notes = serializers.CharField(required=False, allow_blank=True)
+    created_at = serializers.DateTimeField(read_only=True)
+
+    @staticmethod
+    def current(instance):
+        outgoing, incoming = instance.legs
+        return {
+            "id": instance.pk,
+            "from_wallet": outgoing.wallet,
+            "to_wallet": incoming.wallet,
+            "date": incoming.date,
+            "amount": incoming.amount,
+            "description": incoming.description,
+            "notes": incoming.notes,
+            "created_at": instance.created_at,
+        }
+
+    def to_representation(self, instance):
+        return super().to_representation(self.current(instance))
+
+    def validate(self, attrs):
+        # A partial update keeps the other values
+        if self.instance is not None:
+            current = self.current(self.instance)
+            attrs = {
+                field: attrs.get(field, current[field]) for field in self.fields if field not in ("id", "created_at")
+            }
+            kept = {current["from_wallet"], current["to_wallet"]}
+        else:
+            kept = set()
+        errors = {}
+        for field in ("from_wallet", "to_wallet"):
+            # Archived wallets keep their transfers, but do not receive new ones
+            if attrs[field].is_archived and attrs[field] not in kept:
+                errors[field] = _("This wallet is archived.")
+        if attrs["from_wallet"] == attrs["to_wallet"]:
+            errors["to_wallet"] = _("Choose a wallet different from the source one.")
+        elif attrs["from_wallet"].currency != attrs["to_wallet"].currency:
+            errors["to_wallet"] = _("The wallets must use the same currency.")
+        if errors:
+            raise serializers.ValidationError(errors)
+        return attrs
+
+    def create(self, validated_data):
+        with transaction.atomic():
+            instance = Transfer.objects.create()
+            instance.legs = [Transaction(transfer=instance), Transaction(transfer=instance)]
+            self.save_legs(instance, validated_data)
+        return instance
+
+    def update(self, instance, validated_data):
+        with transaction.atomic():
+            self.save_legs(instance, validated_data)
+        return instance
+
+    @staticmethod
+    def save_legs(instance, data):
+        wallets = (data["from_wallet"], data["to_wallet"])
+        amounts = (-data["amount"], data["amount"])
+        for leg, wallet, amount in zip(instance.legs, wallets, amounts):
+            leg.wallet = wallet
+            leg.amount = amount
+            leg.date = data["date"]
+            leg.description = data["description"]
+            leg.notes = data.get("notes", "")
+            leg.save()
 
 
 class TransactionFilterSerializer(serializers.Serializer):

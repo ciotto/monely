@@ -7,6 +7,7 @@ import LoginView from "@/views/LoginView.vue";
 import SetupView from "@/views/SetupView.vue";
 import TransactionFormView from "@/views/TransactionFormView.vue";
 import TransactionsView from "@/views/TransactionsView.vue";
+import TransferFormView from "@/views/TransferFormView.vue";
 import UserFormView from "@/views/UserFormView.vue";
 import UsersView from "@/views/UsersView.vue";
 import WalletFormView from "@/views/WalletFormView.vue";
@@ -19,6 +20,8 @@ const routes = [
   { path: "/transactions", name: "transactions", component: TransactionsView },
   { path: "/transactions/new", name: "transaction-new", component: TransactionFormView },
   { path: "/transactions/:id(\\d+)", name: "transaction-edit", component: TransactionFormView },
+  { path: "/transfers/new", name: "transfer-new", component: TransferFormView },
+  { path: "/transfers/:id(\\d+)", name: "transfer-edit", component: TransferFormView },
   { path: "/wallets", name: "wallets", component: WalletsView, meta: { settings: true } },
   { path: "/wallets/new", name: "wallet-new", component: WalletFormView, meta: { settings: true } },
   { path: "/wallets/:id(\\d+)", name: "wallet-edit", component: WalletFormView, meta: { settings: true } },

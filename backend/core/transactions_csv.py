@@ -5,10 +5,11 @@ from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from core.models import Category, Tag, Transaction, Wallet
+from core.models import Category, Tag, Transaction, Transfer, Wallet
 
 # The columns are not translated, so a file can be imported whatever the language of who exported it
-COLUMNS = ("date", "wallet", "currency", "amount", "description", "category", "tags", "notes")
+# The two transactions of a transfer share a value of the `transfer` column, only meaningful within the file
+COLUMNS = ("date", "wallet", "currency", "amount", "description", "category", "tags", "notes", "transfer")
 REQUIRED_COLUMNS = ("date", "wallet", "amount", "description")
 # Joins the names of the tags in a single cell
 TAG_SEPARATOR = "|"
@@ -29,6 +30,7 @@ def write_transactions(transactions, file):
                 item.category.name if item.category else "",
                 TAG_SEPARATOR.join(tag.name for tag in item.tags.all()),
                 item.notes,
+                item.transfer_id or "",
             )
         )
 
@@ -46,6 +48,12 @@ class TransactionRowSerializer(serializers.Serializer):
     )
     tags = serializers.CharField(required=False, allow_blank=True)
     notes = serializers.CharField(required=False, allow_blank=True, trim_whitespace=False)
+    transfer = serializers.CharField(max_length=50, required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        if attrs.get("transfer") and (attrs.get("category") or attrs.get("tags")):
+            raise serializers.ValidationError({"transfer": [_("A transfer has no category and no tags.")]})
+        return attrs
 
     def validate_amount(self, value):
         if value == 0:
@@ -71,6 +79,8 @@ class TransactionImporter:
         self.wallets = {}
         self.categories = {}
         self.tags = {}
+        # The row numbers and the transactions of each transfer, by the value of the `transfer` column
+        self.transfers = {}
         self.created = {"transactions": 0, "wallets": 0, "categories": 0, "tags": 0}
 
     def run(self, file):
@@ -84,9 +94,12 @@ class TransactionImporter:
                     errors.extend(self.format_errors(number, serializer.errors))
                     continue
                 try:
-                    self.create(serializer.validated_data)
+                    self.create(serializer.validated_data, number)
                 except serializers.ValidationError as e:
                     errors.extend(self.format_errors(number, e.detail))
+            # A transfer is checked once all its rows are valid
+            if not errors:
+                errors = self.create_transfers()
             if errors:
                 # Rolls back what has been created so far
                 raise serializers.ValidationError({"file": errors})
@@ -117,7 +130,7 @@ class TransactionImporter:
             for message in messages
         ]
 
-    def create(self, data):
+    def create(self, data, number):
         wallet = self.get_wallet(data["wallet"], data.get("currency"))
         category = self.get_label(Category, "categories", data["category"]) if data.get("category") else None
         item = Transaction.objects.create(
@@ -130,6 +143,33 @@ class TransactionImporter:
         )
         item.tags.set([self.get_label(Tag, "tags", name) for name in data.get("tags", [])])
         self.created["transactions"] += 1
+        if data.get("transfer"):
+            self.transfers.setdefault(data["transfer"], []).append((number, item))
+
+    def create_transfers(self):
+        errors = []
+        for rows in self.transfers.values():
+            # The errors refer to the first row of the transfer
+            number = rows[0][0]
+            legs = sorted((item for _number, item in rows), key=lambda item: item.amount)
+            if len(legs) != 2:
+                message = _("A transfer needs exactly two rows.")
+            elif (
+                legs[0].amount != -legs[1].amount
+                or legs[0].date != legs[1].date
+                or legs[0].wallet == legs[1].wallet
+                or legs[0].wallet.currency != legs[1].wallet.currency
+            ):
+                message = _(
+                    "The rows of a transfer need opposite amounts, the same date and different wallets with the same "
+                    "currency."
+                )
+            else:
+                transfer = Transfer.objects.create()
+                Transaction.objects.filter(pk__in=[leg.pk for leg in legs]).update(transfer=transfer)
+                continue
+            errors.extend(self.format_errors(number, {"transfer": [message]}))
+        return errors
 
     def get_wallet(self, name, currency):
         key = name.lower()

@@ -1,8 +1,11 @@
+from operator import attrgetter
+
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models.functions import Lower
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 
@@ -119,6 +122,29 @@ class Tag(Label):
         verbose_name_plural = _("tags")
 
 
+class Transfer(models.Model):
+    """
+    Moves money between two wallets with the same currency, through an outgoing and an incoming transaction.
+
+    The two transactions share date, description and notes; they are not incomes or expenses, so they have no category
+    and the reports ignore them, while the balances include them.
+    """
+
+    created_at = models.DateTimeField(_("created at"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("transfer")
+        verbose_name_plural = _("transfers")
+
+    def __str__(self):
+        return str(self.pk)
+
+    @cached_property
+    def legs(self):
+        """The outgoing and the incoming transaction."""
+        return sorted(self.transactions.all(), key=attrgetter("amount"))
+
+
 class Transaction(models.Model):
     """A single money movement on a wallet: negative amounts are expenses, positive ones are incomes."""
 
@@ -137,6 +163,15 @@ class Transaction(models.Model):
     )
     tags = models.ManyToManyField(Tag, blank=True, related_name="transactions", verbose_name=_("tags"))
     notes = models.TextField(_("notes"), blank=True)
+    # Set on the two transactions of a transfer, which are edited and deleted together
+    transfer = models.ForeignKey(
+        Transfer,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="transactions",
+        verbose_name=_("transfer"),
+    )
     created_at = models.DateTimeField(_("created at"), auto_now_add=True)
 
     class Meta:

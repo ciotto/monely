@@ -5,9 +5,9 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
-from core.models import Category, Tag, Transaction, Wallet
+from core.models import Category, Tag, Transaction, Transfer, Wallet
 
-HEADER = "date,wallet,currency,amount,description,category,tags,notes\r\n"
+HEADER = "date,wallet,currency,amount,description,category,tags,notes,transfer\r\n"
 
 
 @pytest.fixture
@@ -51,9 +51,21 @@ class TestTransactionExportView:
         assert response.content.decode() == (
             "﻿"
             + HEADER
-            + "2026-11-01,Card,USD,-10.00,Shopping,,,\r\n"
-            + '2026-11-05,Bank,EUR,1500.50,Shopping,Groceries,car|holiday-2026,"Line 1\n""Line 2"""\r\n'
+            + "2026-11-01,Card,USD,-10.00,Shopping,,,,\r\n"
+            + '2026-11-05,Bank,EUR,1500.50,Shopping,Groceries,car|holiday-2026,"Line 1\n""Line 2""",\r\n'
         )
+
+    def test_export_transfer(self, user_client, wallet):
+        transfer = Transfer.objects.create()
+        create_transaction(wallet, day=3, amount="-50.00", transfer=transfer)
+        create_transaction(Wallet.objects.create(name="Cash"), day=3, amount="50.00", transfer=transfer)
+
+        response = user_client.get(self.url)
+
+        assert response.content.decode().splitlines()[1:] == [
+            f"2026-11-03,Bank,EUR,-50.00,Shopping,,,,{transfer.pk}",
+            f"2026-11-03,Cash,EUR,50.00,Shopping,,,,{transfer.pk}",
+        ]
 
     def test_export_filtered(self, user_client, wallet):
         tag = Tag.objects.create(name="car")
@@ -62,7 +74,7 @@ class TestTransactionExportView:
 
         response = user_client.get(self.url, {"tag": tag.pk, "date_from": "2026-11-01"})
 
-        assert response.content.decode().splitlines()[1:] == ["2026-11-01,Bank,EUR,-10.00,Shopping,,car,"]
+        assert response.content.decode().splitlines()[1:] == ["2026-11-01,Bank,EUR,-10.00,Shopping,,car,,"]
 
     def test_export_invalid_filters(self, user_client):
         response = user_client.get(self.url, {"date_from": "2026-11-02", "date_to": "2026-11-01"})
@@ -135,6 +147,72 @@ class TestTransactionImportView:
 
         assert response.status_code == 201
         assert user_client.get(reverse("api:transactions-export")).content == exported
+
+    def test_import_transfers(self, user_client, wallet):
+        response = self.post(
+            user_client,
+            HEADER
+            + "2026-11-01,Bank,EUR,-50,ATM,,,,a\r\n"
+            + "2026-11-01,Bank,EUR,-10,Coffee,,,,\r\n"
+            + "2026-11-01,Cash,EUR,50,ATM,,,,a\r\n"
+            + "2026-11-02,Bank,EUR,-20,ATM,,,,b\r\n"
+            + "2026-11-02,Cash,EUR,20,ATM,,,,b\r\n",
+        )
+
+        assert response.status_code == 201
+        assert response.json() == {"transactions": 5, "wallets": 1, "categories": 0, "tags": 0}
+        transfers = list(Transfer.objects.order_by("id"))
+        assert len(transfers) == 2
+        assert [sorted((t.wallet.name, t.amount) for t in transfer.transactions.all()) for transfer in transfers] == [
+            [("Bank", Decimal("-50.00")), ("Cash", Decimal("50.00"))],
+            [("Bank", Decimal("-20.00")), ("Cash", Decimal("20.00"))],
+        ]
+        assert Transaction.objects.get(description="Coffee").transfer is None
+
+    def test_import_transfer_round_trip(self, user_client, wallet):
+        transfer = Transfer.objects.create()
+        create_transaction(wallet, day=3, amount="-50.00", transfer=transfer)
+        create_transaction(Wallet.objects.create(name="Cash"), day=3, amount="50.00", transfer=transfer)
+        exported = user_client.get(reverse("api:transactions-export")).content
+        Transfer.objects.all().delete()
+
+        response = self.post(user_client, exported)
+
+        assert response.status_code == 201
+        new = Transfer.objects.get()
+        assert user_client.get(reverse("api:transactions-export")).content == exported.replace(
+            f",{transfer.pk}\r\n".encode(), f",{new.pk}\r\n".encode()
+        )
+
+    @pytest.mark.parametrize(
+        "rows, error",
+        [
+            (["2026-11-01,Bank,EUR,-50,ATM,,,,a"], "Row 2, transfer: A transfer needs exactly two rows."),
+            (
+                ["2026-11-01,Bank,EUR,-50,ATM,,,,a", "2026-11-01,Cash,EUR,50,ATM,,,,a", "2026-11-01,Cash,EUR,1,x,,,,a"],
+                "Row 2, transfer: A transfer needs exactly two rows.",
+            ),
+            (["2026-11-01,Bank,EUR,-50,ATM,,,,a", "2026-11-01,Cash,EUR,40,ATM,,,,a"], "MISMATCH"),
+            (["2026-11-01,Bank,EUR,-50,ATM,,,,a", "2026-11-02,Cash,EUR,50,ATM,,,,a"], "MISMATCH"),
+            (["2026-11-01,Bank,EUR,-50,ATM,,,,a", "2026-11-01,Bank,EUR,50,ATM,,,,a"], "MISMATCH"),
+            (["2026-11-01,Bank,EUR,-50,ATM,,,,a", "2026-11-01,Card,USD,50,ATM,,,,a"], "MISMATCH"),
+            (["2026-11-01,Bank,EUR,-50,ATM,Fees,,,a"], "Row 2, transfer: A transfer has no category and no tags."),
+            (["2026-11-01,Bank,EUR,-50,ATM,,car,,a"], "Row 2, transfer: A transfer has no category and no tags."),
+        ],
+    )
+    def test_import_invalid_transfer(self, user_client, wallet, rows, error):
+        if error == "MISMATCH":
+            error = (
+                "Row 2, transfer: The rows of a transfer need opposite amounts, the same date and different wallets "
+                "with the same currency."
+            )
+
+        response = self.post(user_client, HEADER + "".join(f"{row}\r\n" for row in rows))
+
+        assert response.status_code == 400
+        assert response.json() == {"file": [error]}
+        assert not Transaction.objects.exists()
+        assert not Transfer.objects.exists()
 
     def test_import_errors_roll_back(self, user_client, wallet):
         Wallet.objects.create(name="Twin")

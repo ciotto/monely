@@ -18,9 +18,9 @@ def amount(value):
 
 
 def totals(transactions, month):
-    """The income and the expenses of the month, by currency and category."""
+    """The income and the expenses of the month, by currency and category; transfers are neither."""
     rows = (
-        transactions.filter(date__gte=month, date__lt=add_months(month, 1))
+        transactions.filter(transfer=None, date__gte=month, date__lt=add_months(month, 1))
         .values("wallet__currency", "category")
         .annotate(income=INCOME, expenses=EXPENSES)
         .order_by()

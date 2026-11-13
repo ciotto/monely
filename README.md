@@ -36,13 +36,16 @@ shows where the money goes. It is designed to be used by a single household, wit
   categories.
 - **Transaction**: a single money movement on a wallet, with a date, a signed amount, a description, an optional
   category and any number of tags.
+- **Transfer**: moves money between two wallets with the same currency, as a pair of transactions (outgoing and
+  incoming) that share date, amount, description and notes and are edited and deleted together.
 
 ### Key decisions
 
 - **Amounts**: stored as `DecimalField`, never as floats.
 - **Sign**: amounts are signed; negative means outgoing, positive means incoming.
 - **Balance**: never stored; it is always computed from the transactions.
-- **Transfers between wallets**: essential, but postponed (see M6).
+- **Transfers between wallets**: neither income nor expenses, so they have no category and the reports ignore them,
+  while the balances include them; only between wallets with the same currency.
 - **Currencies**: one currency per wallet, no conversions.
 - **Permissions**: postponed; for now every user can see and edit everything.
 
@@ -51,9 +54,11 @@ shows where the money goes. It is designed to be used by a single household, wit
 - **Welcome flow**: on first run, create the first user and the first wallet.
 - **Wallets**: create, edit, archive and assign owners.
 - **Transactions**: create, edit and delete transactions; list them with filters (wallet, date range, category, tags).
+- **Transfers**: move money between two wallets; both transactions are listed with the others.
 - **CSV export/import**: export the filtered transactions to CSV (`date,wallet,currency,amount,description,category,
-  tags,notes`, tags separated by `|`) and import them back; wallets, categories and tags are matched by name
-  (case-insensitive) and created when missing, and a file with any invalid row is rejected as a whole.
+  tags,notes,transfer`, tags separated by `|`) and import them back; wallets, categories and tags are matched by name
+  (case-insensitive) and created when missing, the two rows of a transfer share the value of the `transfer` column,
+  and a file with any invalid row is rejected as a whole.
 - **Monthly dashboard**: income, expenses and balance for the selected month, breakdown by category, and comparison with
   the same month of the previous year.
 
@@ -77,7 +82,7 @@ Tags were initially in this list and have been moved into the data model.
 - [x] **M3 – Transactions**: categories, CRUD, list with filters.
 - [x] **M4 – Dashboard**: aggregations, charts, month selector.
 - [x] **M5 – Polish for v0.1**: i18n, installation docs, backup/CSV export, published Docker image.
-- [ ] **M6 – v0.2**: transfers between wallets.
+- [x] **M6 – v0.2**: transfers between wallets.
 - [ ] **M7 – v0.3**: recurring transactions.
 - [ ] **M8 – v0.4**: budgeting by category and goals.
 - [ ] **M9 – v0.5**: family balance: identify shared expenses and compute how much each family member has to transfer to

@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import { ArrowLeftRight } from "@lucide/vue";
 import { useI18n } from "vue-i18n";
 
 import { apiFetch } from "@/api/client";
@@ -48,14 +49,29 @@ async function loadTransactions() {
   }
 }
 
+// The transactions of a transfer are edited and deleted together, through the transfer
+function editRoute(transaction) {
+  return transaction.transfer
+    ? { name: "transfer-edit", params: { id: transaction.transfer } }
+    : { name: "transaction-edit", params: { id: transaction.id } };
+}
+
 async function remove(transaction) {
-  if (!window.confirm(t("transactions.confirmDelete", { description: transaction.description }))) {
+  const { transfer, description } = transaction;
+  if (
+    !window.confirm(t(transfer ? "transactions.confirmDeleteTransfer" : "transactions.confirmDelete", { description }))
+  ) {
     return;
   }
   error.value = null;
   try {
-    await apiFetch(`/transactions/${transaction.id}/`, { method: "DELETE" });
-    transactions.value = transactions.value.filter((other) => other.id !== transaction.id);
+    if (transfer) {
+      await apiFetch(`/transfers/${transfer}/`, { method: "DELETE" });
+      transactions.value = transactions.value.filter((other) => other.transfer !== transfer);
+    } else {
+      await apiFetch(`/transactions/${transaction.id}/`, { method: "DELETE" });
+      transactions.value = transactions.value.filter((other) => other.id !== transaction.id);
+    }
   } catch {
     error.value = "transactions.errors.delete";
   }
@@ -132,6 +148,12 @@ onMounted(load);
             @change="importFile"
           />
         </label>
+        <RouterLink
+          :to="{ name: 'transfer-new' }"
+          class="rounded border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
+        >
+          {{ $t("transactions.newTransfer") }}
+        </RouterLink>
         <RouterLink :to="{ name: 'transaction-new' }" class="rounded bg-brand px-4 py-2 text-white hover:bg-brand-dark">
           {{ $t("transactions.new") }}
         </RouterLink>
@@ -248,7 +270,11 @@ onMounted(load);
                 </span>
               </td>
               <td class="px-4 py-2">
-                <span v-if="transaction.category" class="flex items-center gap-2">
+                <span v-if="transaction.transfer" data-transfer class="flex items-center gap-2 text-slate-500">
+                  <ArrowLeftRight class="size-4 shrink-0" aria-hidden="true" />
+                  {{ $t("transactions.transfer") }}
+                </span>
+                <span v-else-if="transaction.category" class="flex items-center gap-2">
                   <CategoryIcon
                     v-if="categories[transaction.category].icon"
                     :name="categories[transaction.category].icon"
@@ -271,10 +297,7 @@ onMounted(load);
                 {{ formatAmount(transaction.amount, wallets[transaction.wallet].currency, locale) }}
               </td>
               <td class="px-4 py-2 text-right whitespace-nowrap">
-                <RouterLink
-                  :to="{ name: 'transaction-edit', params: { id: transaction.id } }"
-                  class="text-brand hover:text-brand-dark"
-                >
+                <RouterLink :to="editRoute(transaction)" class="text-brand hover:text-brand-dark">
                   {{ $t("transactions.edit") }}
                 </RouterLink>
                 <button type="button" class="ml-3 text-expense hover:underline" @click="remove(transaction)">

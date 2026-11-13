@@ -63,6 +63,7 @@ class TestTransactionListView:
             # Ordered by name, like the tags themselves
             "tags": [tags[1].pk, tags[0].pk],
             "notes": "November salary",
+            "transfer": None,
             "created_at": transaction.created_at.isoformat().replace("+00:00", "Z"),
         }
 

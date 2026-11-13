@@ -8,9 +8,10 @@ from django.utils.translation import gettext_lazy as _
 from django.views import View
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.generics import (
+    CreateAPIView,
     GenericAPIView,
     ListAPIView,
     ListCreateAPIView,
@@ -24,8 +25,9 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from core.dashboard import build_dashboard
-from core.models import Category, Tag, Transaction, User, Wallet
+from core.models import Category, Tag, Transaction, Transfer, User, Wallet
 from core.serializers import (
+    TRANSFER_LEG_ERROR,
     AdminUserSerializer,
     CategorySerializer,
     DashboardFilterSerializer,
@@ -36,6 +38,7 @@ from core.serializers import (
     TransactionFilterSerializer,
     TransactionImportSerializer,
     TransactionSerializer,
+    TransferSerializer,
     UserSerializer,
     WalletSerializer,
 )
@@ -214,6 +217,21 @@ class TransactionImportView(APIView):
 class TransactionDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Transaction.objects.prefetch_related("tags")
     serializer_class = TransactionSerializer
+
+    def perform_destroy(self, instance):
+        if instance.transfer_id is not None:
+            raise serializers.ValidationError(TRANSFER_LEG_ERROR)
+        instance.delete()
+
+
+class TransferCreateView(CreateAPIView):
+    serializer_class = TransferSerializer
+
+
+# Deleting a transfer also deletes its transactions
+class TransferDetailView(RetrieveUpdateDestroyAPIView):
+    queryset = Transfer.objects.prefetch_related("transactions__wallet")
+    serializer_class = TransferSerializer
 
 
 class DashboardView(APIView):

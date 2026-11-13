@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 
-from core.models import Category, Tag, Transaction, User, Wallet
+from core.models import Category, Tag, Transaction, Transfer, User, Wallet
 
 
 @admin.register(User)
@@ -43,9 +43,28 @@ class CategoryAdmin(LabelAdmin):
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ("date", "description", "amount", "wallet", "category")
+    list_display = ("date", "description", "amount", "wallet", "category", "transfer")
     list_filter = ("wallet", "category", "tags")
+    # The transactions of a transfer are created and kept consistent by the API
+    readonly_fields = ("transfer",)
     search_fields = ("description", "notes")
     date_hierarchy = "date"
     filter_horizontal = ("tags",)
     list_select_related = ("wallet", "category")
+
+
+class TransferTransactionInline(admin.TabularInline):
+    model = Transaction
+    fields = ("date", "wallet", "amount", "description")
+    readonly_fields = fields
+    extra = 0
+    can_delete = False
+
+    def has_add_permission(self, request, obj):
+        return False
+
+
+@admin.register(Transfer)
+class TransferAdmin(admin.ModelAdmin):
+    list_display = ("id", "created_at")
+    inlines = (TransferTransactionInline,)

@@ -1,7 +1,9 @@
+import datetime
+
 import pytest
 from django.urls import reverse
 
-from core.models import User
+from core.models import Transaction, Transfer, User, Wallet
 
 
 @pytest.mark.django_db
@@ -45,3 +47,19 @@ class TestUserAdmin:
         response = admin_client.get(reverse("admin:core_transaction_changelist"))
 
         assert response.status_code == 200
+
+    def test_transfer_change(self, admin_client):
+        transfer = Transfer.objects.create()
+        Transaction.objects.create(
+            transfer=transfer,
+            wallet=Wallet.objects.create(name="Bank"),
+            date=datetime.date(2026, 11, 1),
+            amount=-1,
+            description="ATM",
+        )
+
+        assert admin_client.get(reverse("admin:core_transfer_changelist")).status_code == 200
+        response = admin_client.get(reverse("admin:core_transfer_change", args=[transfer.pk]))
+
+        assert response.status_code == 200
+        assert "ATM" in response.content.decode()

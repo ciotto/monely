@@ -88,15 +88,18 @@
     "loading": "Caricamento…",
     "empty": "Nessun movimento corrisponde ai filtri.",
     "new": "Nuovo movimento",
+    "newTransfer": "Nuovo trasferimento",
     "edit": "Modifica",
     "delete": "Elimina",
     "confirmDelete": "Eliminare il movimento {description}?",
+    "confirmDeleteTransfer": "Eliminare il trasferimento {description}? Verranno eliminati entrambi i suoi movimenti.",
     "export": "Esporta CSV",
     "import": "Importa CSV",
     "importing": "Importazione…",
     "imported": "1 movimento importato. | {n} movimenti importati.",
     "importCreated": "Nuovi: {wallets} portafogli, {categories} categorie, {tags} tag.",
     "importFailed": "Il file non è stato importato, correggi queste righe e riprova:",
+    "transfer": "Trasferimento",
     "filters": {
       "wallet": "Portafoglio",
       "category": "Categoria",
@@ -146,6 +149,31 @@
         "load": "Impossibile caricare il movimento.",
         "invalid": "Controlla i campi qui sotto.",
         "generic": "Impossibile salvare il movimento: riprova più tardi."
+      }
+    }
+  },
+  "transfers": {
+    "form": {
+      "titleNew": "Nuovo trasferimento",
+      "titleEdit": "Modifica trasferimento",
+      "fields": {
+        "from_wallet": "Da",
+        "to_wallet": "A",
+        "amount": "Importo",
+        "date": "Data",
+        "description": "Descrizione",
+        "notes": "Note"
+      },
+      "defaultDescription": "Trasferimento",
+      "chooseWallet": "Scegli un portafoglio",
+      "noWallets": "Un trasferimento sposta denaro tra due portafogli, e ci sono meno di due portafogli attivi.",
+      "createWallet": "Crea un portafoglio",
+      "save": "Salva",
+      "cancel": "Annulla",
+      "errors": {
+        "load": "Impossibile caricare il trasferimento.",
+        "invalid": "Controlla i campi qui sotto.",
+        "generic": "Impossibile salvare il trasferimento: riprova più tardi."
       }
     }
   },

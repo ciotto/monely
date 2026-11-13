@@ -88,15 +88,18 @@
     "loading": "Loading…",
     "empty": "No transactions match the filters.",
     "new": "New transaction",
+    "newTransfer": "New transfer",
     "edit": "Edit",
     "delete": "Delete",
     "confirmDelete": "Delete the transaction {description}?",
+    "confirmDeleteTransfer": "Delete the transfer {description}? Both its transactions will be deleted.",
     "export": "Export CSV",
     "import": "Import CSV",
     "importing": "Importing…",
     "imported": "1 transaction imported. | {n} transactions imported.",
     "importCreated": "New: {wallets} wallets, {categories} categories, {tags} tags.",
     "importFailed": "The file was not imported, fix these rows and try again:",
+    "transfer": "Transfer",
     "filters": {
       "wallet": "Wallet",
       "category": "Category",
@@ -146,6 +149,31 @@
         "load": "Unable to load the transaction.",
         "invalid": "Check the fields below.",
         "generic": "Unable to save the transaction: try again later."
+      }
+    }
+  },
+  "transfers": {
+    "form": {
+      "titleNew": "New transfer",
+      "titleEdit": "Edit transfer",
+      "fields": {
+        "from_wallet": "From",
+        "to_wallet": "To",
+        "amount": "Amount",
+        "date": "Date",
+        "description": "Description",
+        "notes": "Notes"
+      },
+      "defaultDescription": "Transfer",
+      "chooseWallet": "Choose a wallet",
+      "noWallets": "A transfer moves money between two wallets, and there are fewer than two active wallets.",
+      "createWallet": "Create a wallet",
+      "save": "Save",
+      "cancel": "Cancel",
+      "errors": {
+        "load": "Unable to load the transfer.",
+        "invalid": "Check the fields below.",
+        "generic": "Unable to save the transfer: try again later."
       }
     }
   },
