@@ -59,6 +59,8 @@ shows where the money goes. It is designed to be used by a single household, wit
   tags,notes,transfer`, tags separated by `|`) and import them back; wallets, categories and tags are matched by name
   (case-insensitive) and created when missing, the two rows of a transfer share the value of the `transfer` column,
   and a file with any invalid row is rejected as a whole.
+- **Maintenance** (admins only): technical tools, starting with deleting all the data (transactions, transfers,
+  wallets, categories and tags; the users are kept) after typing a confirmation word.
 - **Monthly dashboard**: income, expenses and balance for the selected month, breakdown by category, and comparison with
   the same month of the previous year.
 

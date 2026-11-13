@@ -4,6 +4,7 @@ import { authGuard } from "@/auth";
 import DashboardView from "@/views/DashboardView.vue";
 import LabelsView from "@/views/LabelsView.vue";
 import LoginView from "@/views/LoginView.vue";
+import MaintenanceView from "@/views/MaintenanceView.vue";
 import SetupView from "@/views/SetupView.vue";
 import TransactionFormView from "@/views/TransactionFormView.vue";
 import TransactionsView from "@/views/TransactionsView.vue";
@@ -36,6 +37,7 @@ const routes = [
   { path: "/users", name: "users", component: UsersView, meta: { admin: true, settings: true } },
   { path: "/users/new", name: "user-new", component: UserFormView, meta: { admin: true, settings: true } },
   { path: "/users/:id(\\d+)", name: "user-edit", component: UserFormView, meta: { admin: true, settings: true } },
+  { path: "/maintenance", name: "maintenance", component: MaintenanceView, meta: { admin: true, settings: true } },
   { path: "/:pathMatch(.*)*", name: "not-found", component: () => import("@/views/NotFoundView.vue") },
 ];
 

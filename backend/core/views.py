@@ -242,6 +242,33 @@ class DashboardView(APIView):
         return Response(build_dashboard(month, filters.validated_data.get("wallet")))
 
 
+class MaintenanceDataView(APIView):
+    """Counts the data of the instance, or deletes it all; the users are kept, so the admins can still log in."""
+
+    permission_classes = [IsAdminUser]
+    # In deletion order: transactions protect their wallets
+    models = {
+        "transactions": Transaction,
+        "transfers": Transfer,
+        "wallets": Wallet,
+        "categories": Category,
+        "tags": Tag,
+    }
+
+    def count(self):
+        return {name: model.objects.count() for name, model in self.models.items()}
+
+    def get(self, request):
+        return Response(self.count())
+
+    def delete(self, request):
+        with transaction.atomic():
+            deleted = self.count()
+            for model in self.models.values():
+                model.objects.all().delete()
+        return Response(deleted)
+
+
 @method_decorator(never_cache, name="dispatch")
 class FrontendView(View):
     """Serves the SPA entry point for every client-side route; unknown routes get the SPA's own 404 page."""

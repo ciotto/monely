@@ -114,6 +114,14 @@ async function signOut() {
           >
             {{ $t("nav.users") }}
           </RouterLink>
+          <RouterLink
+            v-if="auth.user.is_staff"
+            :to="{ name: 'maintenance' }"
+            class="block px-4 py-2 hover:bg-slate-50"
+            active-class="font-semibold text-brand"
+          >
+            {{ $t("nav.maintenance") }}
+          </RouterLink>
           <div class="my-1 border-t border-slate-200"></div>
           <label class="flex items-center justify-between px-4 py-2">
             {{ $t("nav.language") }}

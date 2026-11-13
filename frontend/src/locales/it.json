@@ -7,6 +7,7 @@
     "dashboard": "Dashboard",
     "language": "Lingua",
     "logout": "Esci",
+    "maintenance": "Manutenzione",
     "menu": "Account e impostazioni",
     "settings": "Impostazioni",
     "tags": "Tag",
@@ -347,5 +348,33 @@
   "notFound": {
     "title": "Pagina non trovata",
     "back": "Torna alla dashboard"
+  },
+  "maintenance": {
+    "title": "Manutenzione",
+    "intro": "Strumenti tecnici per gli amministratori.",
+    "loading": "Caricamento…",
+    "errors": {
+      "load": "Impossibile caricare i dati: riprova più tardi."
+    },
+    "deleteData": {
+      "title": "Elimina tutti i dati",
+      "description": "Elimina tutti i movimenti, i trasferimenti, i portafogli, le categorie e i tag. Gli utenti vengono mantenuti. L'operazione è irreversibile: se vuoi un backup, esporta prima i movimenti.",
+      "counts": {
+        "transactions": "movimenti",
+        "transfers": "trasferimenti",
+        "wallets": "portafogli",
+        "categories": "categorie",
+        "tags": "tag"
+      },
+      "empty": "Non ci sono dati da eliminare.",
+      "confirm": "Per confermare, scrivi {word}",
+      "confirmWord": "ELIMINA",
+      "submit": "Elimina tutti i dati",
+      "deleting": "Eliminazione…",
+      "done": "Eliminati: {transactions} movimenti, {transfers} trasferimenti, {wallets} portafogli, {categories} categorie, {tags} tag.",
+      "errors": {
+        "delete": "Impossibile eliminare i dati: riprova più tardi."
+      }
+    }
   }
 }

@@ -7,6 +7,7 @@
     "dashboard": "Dashboard",
     "language": "Language",
     "logout": "Log out",
+    "maintenance": "Maintenance",
     "menu": "Account and settings",
     "settings": "Settings",
     "tags": "Tags",
@@ -347,5 +348,33 @@
   "notFound": {
     "title": "Page not found",
     "back": "Back to the dashboard"
+  },
+  "maintenance": {
+    "title": "Maintenance",
+    "intro": "Technical tools for the administrators.",
+    "loading": "Loading…",
+    "errors": {
+      "load": "Unable to load the data: try again later."
+    },
+    "deleteData": {
+      "title": "Delete all data",
+      "description": "Deletes every transaction, transfer, wallet, category and tag. The users are kept. This cannot be undone: export the transactions first if you want a backup.",
+      "counts": {
+        "transactions": "transactions",
+        "transfers": "transfers",
+        "wallets": "wallets",
+        "categories": "categories",
+        "tags": "tags"
+      },
+      "empty": "There is no data to delete.",
+      "confirm": "To confirm, type {word}",
+      "confirmWord": "DELETE",
+      "submit": "Delete all data",
+      "deleting": "Deleting…",
+      "done": "Deleted: {transactions} transactions, {transfers} transfers, {wallets} wallets, {categories} categories, {tags} tags.",
+      "errors": {
+        "delete": "Unable to delete the data: try again later."
+      }
+    }
   }
 }

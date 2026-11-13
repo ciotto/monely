@@ -6,6 +6,7 @@ from core.views import (
     DashboardView,
     LoginView,
     LogoutView,
+    MaintenanceDataView,
     MeView,
     SetupView,
     TagDetailView,
@@ -46,4 +47,5 @@ urlpatterns = [
     path("transfers/", TransferCreateView.as_view(), name="transfers"),
     path("transfers/<int:pk>/", TransferDetailView.as_view(), name="transfer"),
     path("dashboard/", DashboardView.as_view(), name="dashboard"),
+    path("maintenance/data/", MaintenanceDataView.as_view(), name="maintenance-data"),
 ]
