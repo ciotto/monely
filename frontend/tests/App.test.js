@@ -6,6 +6,11 @@ import { i18n, setLocale } from "@/i18n";
 
 import { ADMIN, mockFetch, mountAt, USER } from "./helpers";
 
+// The configuration links, the language and the logout live in the account menu
+async function openMenu(wrapper) {
+  await wrapper.find("header button[name=menu]").trigger("click");
+}
+
 async function submitLogin(wrapper) {
   await wrapper.find("input[name=email]").setValue("anna@example.com");
   await wrapper.find("input[name=password]").setValue("secret");
@@ -42,9 +47,44 @@ describe("App", () => {
       const { wrapper } = await mountAt("/");
       expect(wrapper.find("h1").text()).toBe("Dashboard");
       expect(wrapper.text()).toContain("No data yet");
+      expect(wrapper.find("header nav").text()).toBe("DashboardTransactions");
       expect(wrapper.find("header").text()).toContain("anna@example.com");
-      expect(wrapper.find("header").text()).toContain("TransactionsWalletsCategoriesTags");
+      expect(wrapper.find("header").text()).not.toContain("Wallets");
+
+      await openMenu(wrapper);
+      expect(wrapper.find("header button[name=menu]").attributes("aria-expanded")).toBe("true");
+      expect(wrapper.find("header").text()).toContain("SettingsWalletsCategoriesTags");
       expect(wrapper.find("header").text()).not.toContain("Users");
+    });
+
+    it("closes the account menu on outside clicks, escape and navigation", async () => {
+      // Attached to the document, so that the clicks inside the menu reach its listener
+      const { wrapper, router } = await mountAt("/", { attachTo: document.body });
+      const isOpen = () => wrapper.find("header a[href='/wallets']").exists();
+
+      await openMenu(wrapper);
+      await wrapper.find("header select").trigger("click");
+      expect(isOpen()).toBe(true);
+      document.dispatchEvent(new MouseEvent("click"));
+      await flushPromises();
+      expect(isOpen()).toBe(false);
+
+      await openMenu(wrapper);
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+      await flushPromises();
+      expect(isOpen()).toBe(true);
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+      await flushPromises();
+      expect(isOpen()).toBe(false);
+
+      await openMenu(wrapper);
+      await openMenu(wrapper);
+      expect(isOpen()).toBe(false);
+
+      await openMenu(wrapper);
+      await router.push({ name: "transactions" });
+      await flushPromises();
+      expect(isOpen()).toBe(false);
     });
 
     it("renders the not found page for unknown paths", async () => {
@@ -54,6 +94,7 @@ describe("App", () => {
 
     it("switches language from the header", async () => {
       const { wrapper } = await mountAt("/");
+      await openMenu(wrapper);
       await wrapper.find("select").setValue("it");
       expect(i18n.global.locale.value).toBe("it");
       expect(wrapper.text()).toContain("Nessun dato ancora");
@@ -66,7 +107,8 @@ describe("App", () => {
 
     it("logs out and shows the login page", async () => {
       const { wrapper, router } = await mountAt("/");
-      await wrapper.find("header button").trigger("click");
+      await openMenu(wrapper);
+      await wrapper.find("header button[name=logout]").trigger("click");
       await flushPromises();
       expect(router.currentRoute.value.name).toBe("login");
       expect(wrapper.find("h1").text()).toBe("Log in");
@@ -75,6 +117,15 @@ describe("App", () => {
   });
 
   describe("anonymous", () => {
+    it("switches language from the header without the account menu", async () => {
+      mockFetch({ "GET /api/auth/me/": [403, {}] });
+      const { wrapper } = await mountAt("/login");
+      expect(wrapper.find("header button[name=menu]").exists()).toBe(false);
+      await wrapper.find("header select").setValue("it");
+      expect(i18n.global.locale.value).toBe("it");
+      expect(wrapper.find("h1").text()).toBe("Accedi");
+    });
+
     it("redirects to the login page and back after logging in", async () => {
       const fetch = mockFetch({ "GET /api/auth/me/": [403, {}], "POST /api/auth/login/": [200, USER] });
       const { wrapper, router } = await mountAt("/missing?x=1");
@@ -206,6 +257,7 @@ describe("App", () => {
     it("lists the users from the header link", async () => {
       mockFetch({ "GET /api/auth/me/": [200, ADMIN], "GET /api/users/": [200, USERS] });
       const { wrapper, router } = await mountAt("/");
+      await openMenu(wrapper);
       await wrapper.find("header a[href='/users']").trigger("click");
       await flushPromises();
       expect(router.currentRoute.value.name).toBe("users");
@@ -433,6 +485,7 @@ describe("App", () => {
         "GET /api/wallets/owners/": [200, OWNERS],
       });
       const { wrapper, router } = await mountAt("/");
+      await openMenu(wrapper);
       await wrapper.find("header a[href='/wallets']").trigger("click");
       await flushPromises();
       expect(router.currentRoute.value.name).toBe("wallets");
@@ -672,6 +725,7 @@ describe("App", () => {
         "GET /api/tags/": [200, [{ id: 1, name: "car", color: "#d97706" }]],
       });
       const { wrapper, router } = await mountAt("/");
+      await openMenu(wrapper);
       await wrapper.find("header a[href='/categories']").trigger("click");
       await flushPromises();
       expect(router.currentRoute.value.name).toBe("categories");
@@ -684,6 +738,7 @@ describe("App", () => {
       expect(rent.find(".rounded-full").element.style.backgroundColor).toBe("rgb(37, 99, 235)");
       expect(wrapper.find("button[name=icon]").exists()).toBe(true);
 
+      await openMenu(wrapper);
       await wrapper.find("header a[href='/tags']").trigger("click");
       await flushPromises();
       expect(wrapper.find("h1").text()).toBe("Tags");

@@ -28,11 +28,11 @@ export function mockFetch(responses) {
   return fetch;
 }
 
-export async function mountAt(path) {
+export async function mountAt(path, options = {}) {
   const router = createAppRouter(createMemoryHistory());
   router.push(path);
   await router.isReady();
-  const wrapper = mount(App, { global: { plugins: [router, i18n] } });
+  const wrapper = mount(App, { global: { plugins: [router, i18n] }, ...options });
   await flushPromises();
   return { wrapper, router };
 }
