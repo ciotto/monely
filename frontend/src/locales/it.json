@@ -61,6 +61,10 @@
       "net": "Saldo"
     },
     "byCategory": "Per categoria",
+    "budgetLeft": "Budget residuo",
+    "overBudget": "Oltre il budget",
+    "budgetNote": "Per le categorie con un budget, il mese corrente conta i movimenti ricorrenti con la loro quota mensile, anche quando non sono in scadenza.",
+    "manageBudgets": "Gestisci i budget",
     "kind": "Mostra",
     "kinds": {
       "expenses": "Uscite",
@@ -78,7 +82,8 @@
       "net": "Saldo per categoria, confrontato con il mese precedente e con lo stesso mese dell'anno precedente"
     },
     "columns": {
-      "category": "Categoria"
+      "category": "Categoria",
+      "budget": "Budget"
     },
     "uncategorized": "Senza categoria",
     "balances": "Saldi alla fine di {month}",

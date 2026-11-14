@@ -35,6 +35,7 @@ const CATEGORIES = [
   { id: 5, name: "Rent", color: "#dc2626", icon: "" },
   { id: 6, name: "Car", color: "#7c3aed", icon: "" },
   { id: 7, name: "Gifts", color: "#db2777", icon: "" },
+  { id: 8, name: "Home", color: "#0891b2", icon: "" },
 ];
 
 // The amounts of a category in the month, the previous month and the same month of the previous year
@@ -64,7 +65,45 @@ const EUR = {
     category(7, ["0.00", "0.00"], ["0.00", "-800.00"], ["0.00", "-100.00"]),
     category(null, ["0.00", "-10.00"], ["0.00", "0.00"], ["0.00", "0.00"]),
   ],
+  budgets: [],
 };
+// The budgets of the month, as computed by the backend
+const BUDGETS = [
+  {
+    id: 10,
+    category: 6,
+    currency: "EUR",
+    amount: "150.00",
+    transactions: "30.00",
+    recurring: "100.00",
+    spent: "130.00",
+    remaining: "20.00",
+    recurring_transactions: [{ id: 7, description: "Insurance", share: "100.00" }],
+  },
+  {
+    id: 11,
+    category: 3,
+    currency: "EUR",
+    amount: "40.00",
+    transactions: "42.30",
+    recurring: "0.00",
+    spent: "42.30",
+    remaining: "-2.30",
+    recurring_transactions: [],
+  },
+  // Only a recurring transaction weighs on it, so the category has no transactions
+  {
+    id: 12,
+    category: 8,
+    currency: "EUR",
+    amount: "50.00",
+    transactions: "0.00",
+    recurring: "25.00",
+    spent: "25.00",
+    remaining: "25.00",
+    recurring_transactions: [{ id: 8, description: "Cleaning", share: "25.00" }],
+  },
+];
 const DASHBOARD = {
   month: "2026-11",
   previous_month: "2026-10",
@@ -113,6 +152,82 @@ describe("dashboard", () => {
       ["Balance", "+€1,452.70", "Nov 2025: +€1,370.00 (+6%)"],
     ]);
     expect(wrapper.findAll("li").map((item) => item.text())).toEqual(["Bank-€2,722.70"]);
+    // Without budgets there is no budget column
+    expect(wrapper.find("[data-budget-note]").exists()).toBe(false);
+  });
+
+  it("shows the budgets of the month in the expenses by category", async () => {
+    const summary = { ...EUR, budgets: BUDGETS };
+    mockFetch({
+      ...LOOKUPS,
+      "GET /api/dashboard/": [200, { ...DASHBOARD, currencies: [summary] }],
+      "GET /api/budgets/summary/?month=2026-11": [200, { month: "2026-11", budgets: BUDGETS }],
+    });
+    const { wrapper, router } = await mountAt("/");
+    expect(wrapper.findAll("thead th").map((cell) => cell.text())).toEqual([
+      "Category",
+      "Nov 2026",
+      "Oct 2026",
+      "Nov 2025",
+      "Budget",
+    ]);
+    // The month of a category with a budget counts what the budget spent, recurring shares included
+    expect(rows(wrapper)).toEqual([
+      ["Car", "€130.00", "€800.00", "€100.00", "€150.00 €20.00 left"],
+      ["Groceries", "€42.30", "€60.00", "€30.00", "€40.00 €2.30 over budget"],
+      ["Home", "€25.00", "€0.00", "€0.00", "€50.00 €25.00 left"],
+      ["Uncategorized", "€10.00", "€0.00", "€0.00", ""],
+      ["Rent", "€0.00", "€800.00", "€800.00", ""],
+      ["Gifts", "€0.00", "€800.00", "€100.00", ""],
+      ["Salary", "€0.00", "€0.00", "€5.00", ""],
+    ]);
+    expect(wrapper.findAll("td[data-budget] span")[1].classes()).toContain("text-expense");
+    expect(wrapper.findAll("td[data-budget] span")[0].classes()).not.toContain("text-expense");
+
+    // The bar of the month stacks what is left of the budget, or what goes over it, on what it spent
+    const [chart] = charts;
+    expect(
+      chart.data.datasets.map(({ label, data, backgroundColor, stack }) => [label, data, backgroundColor, stack]),
+    ).toEqual([
+      ["Nov 2026", [130, 40, 25, 10, 0, 0, 0], "#0f766e", "current"],
+      ["Budget left", [20, 0, 25, null, null, null, null], "#99f6e4", "current"],
+      ["Over budget", [0, 2.3, 0, null, null, null, null], "#b91c1c", "current"],
+      ["Oct 2026", [800, 60, 0, 0, 800, 800, 0], "#d97706", "3"],
+      ["Nov 2025", [100, 30, 0, 0, 800, 100, 5], "#94a3b8", "4"],
+    ]);
+    expect(chart.config.options.scales.x.stacked).toBe(true);
+    // The parts that do not apply to a category are left out of the tooltip
+    const filter = chart.config.options.plugins.tooltip.filter;
+    expect([filter({ raw: null }), filter({ raw: 0 })]).toEqual([false, true]);
+
+    // The budgets are about the expenses
+    await wrapper.findAll("[role=group] button")[1].trigger("click");
+    expect(wrapper.findAll("thead th")).toHaveLength(4);
+    expect(chart.data.datasets.map(({ label }) => label)).toEqual(["Nov 2026", "Oct 2026", "Nov 2025"]);
+    expect(wrapper.find("[data-budget-note]").exists()).toBe(false);
+    await wrapper.findAll("[role=group] button")[0].trigger("click");
+
+    // The budgets page opens on the same month
+    const note = wrapper.find("[data-budget-note]");
+    expect(note.text()).toContain("monthly share");
+    expect(note.find("a").text()).toBe("Manage budgets");
+    expect(note.find("a").attributes("href")).toBe("/budgets?month=2026-11");
+    await note.find("a").trigger("click");
+    await flushPromises();
+    expect(router.currentRoute.value.name).toBe("budgets");
+    expect(wrapper.find("input[name=month]").element.value).toBe("2026-11");
+  });
+
+  it("does not use the budget when the refunds exceed the expenses", async () => {
+    const refunded = { ...BUDGETS[0], transactions: "-5.00", recurring: "0.00", spent: "-5.00", remaining: "155.00" };
+    mockFetch({
+      ...LOOKUPS,
+      "GET /api/dashboard/": [200, { ...DASHBOARD, currencies: [{ ...EUR, budgets: [refunded] }] }],
+    });
+    await mountAt("/");
+    const [chart] = charts;
+    const car = chart.data.labels.indexOf("Car");
+    expect(chart.data.datasets.slice(0, 3).map(({ data }) => data[car])).toEqual([0, 150, 0]);
   });
 
   it("breaks the expenses down by category", async () => {

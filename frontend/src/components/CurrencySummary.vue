@@ -7,7 +7,7 @@ import CategoryIcon from "@/components/CategoryIcon.vue";
 import { formatAmount, formatMonth } from "@/format";
 
 // The month of one currency: the totals are compared with the same month of the previous year, the categories also
-// with the previous month
+// with the previous month. In the expenses, the categories with a budget show how much of it the month used
 const props = defineProps({
   summary: { type: Object, required: true },
   month: { type: String, required: true },
@@ -21,6 +21,9 @@ const props = defineProps({
 const { t, locale } = useI18n();
 // The breakdown shows the expenses, the incomes or their sum
 const kind = ref("expenses");
+// The budgets by category, with what they spent: the recurring transactions count with their monthly share
+const budgets = computed(() => Object.fromEntries(props.summary.budgets.map((budget) => [budget.category, budget])));
+const showBudgets = computed(() => kind.value === "expenses" && props.summary.budgets.length > 0);
 
 // The current month stands out in the brand color, the previous periods are context
 const periods = computed(() => [
@@ -64,24 +67,67 @@ function byMagnitude(a, b) {
   return 0;
 }
 
-const rows = computed(() =>
-  props.summary.categories
-    .map((row) => ({
-      category: row.category === null ? null : props.categories[row.category],
-      values: periods.value.map(({ prefix }) => categoryValue(row, prefix)),
-    }))
-    .filter((row) => row.values.some(Boolean))
-    .sort(byMagnitude),
-);
+const rows = computed(() => {
+  const source = [...props.summary.categories];
+  if (showBudgets.value) {
+    // A category with a budget is shown also without transactions, e.g. when only recurring transactions weigh on it
+    const listed = new Set(source.map((row) => row.category));
+    for (const budget of props.summary.budgets.filter((budget) => !listed.has(budget.category))) {
+      const empty = periods.value.flatMap(({ prefix }) => [`${prefix}income`, `${prefix}expenses`]);
+      source.push({ category: budget.category, ...Object.fromEntries(empty.map((field) => [field, "0.00"])) });
+    }
+  }
+  return source
+    .map((row) => {
+      const budget = showBudgets.value ? budgets.value[row.category] : undefined;
+      const values = periods.value.map(({ prefix }) => categoryValue(row, prefix));
+      if (budget) {
+        // Refunds above the expenses use none of the budget
+        values[0] = Math.max(Number(budget.spent), 0);
+      }
+      return { category: row.category === null ? null : props.categories[row.category], budget, values };
+    })
+    .filter((row) => row.budget || row.values.some(Boolean))
+    .sort(byMagnitude);
+});
 
 const labels = computed(() => rows.value.map((row) => row.category?.name ?? t("dashboard.uncategorized")));
-const datasets = computed(() =>
-  periods.value.map((period, index) => ({
+const datasets = computed(() => {
+  const [current, ...previous] = periods.value.map((period, index) => ({
     label: formatMonth(period.month, locale.value, "short"),
     data: rows.value.map((row) => row.values[index]),
     backgroundColor: period.color,
-  })),
-);
+  }));
+  if (!showBudgets.value) {
+    return [current, ...previous];
+  }
+  // The bar of the month stacks what is left of the budget, or what goes over it, on what it spent
+  // Rounded to cents, as the floating point difference of two amounts can lose them
+  const budgetPart = (part) =>
+    rows.value.map((row) =>
+      row.budget ? Math.round(part(row.values[0], Number(row.budget.amount)) * 100) / 100 : null,
+    );
+  return [
+    {
+      ...current,
+      data: rows.value.map((row) => Math.min(row.values[0], Number(row.budget?.amount ?? Infinity))),
+      stack: "current",
+    },
+    {
+      label: t("dashboard.budgetLeft"),
+      data: budgetPart((spent, amount) => Math.max(amount - spent, 0)),
+      backgroundColor: "#99f6e4",
+      stack: "current",
+    },
+    {
+      label: t("dashboard.overBudget"),
+      data: budgetPart((spent, amount) => Math.max(spent - amount, 0)),
+      backgroundColor: "#b91c1c",
+      stack: "current",
+    },
+    ...previous,
+  ];
+});
 const signDisplay = computed(() => (kind.value === "net" ? "exceptZero" : "auto"));
 
 function amount(value, signDisplay = "auto") {
@@ -160,6 +206,9 @@ function percentage(change) {
                 >
                   {{ formatMonth(period.month, locale, "short") }}
                 </th>
+                <th v-if="showBudgets" class="py-2 pl-2 text-right font-medium">
+                  {{ $t("dashboard.columns.budget") }}
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -188,10 +237,31 @@ function percentage(change) {
                 >
                   {{ amount(value, signDisplay) }}
                 </td>
+                <td v-if="showBudgets" data-budget class="py-2 pl-2 text-right whitespace-nowrap tabular-nums">
+                  <template v-if="row.budget">
+                    {{ amount(row.budget.amount) }}
+                    <span
+                      class="block text-xs"
+                      :class="Number(row.budget.remaining) < 0 ? 'font-medium text-expense' : 'text-slate-500'"
+                    >
+                      {{
+                        Number(row.budget.remaining) < 0
+                          ? $t("budgets.over", { amount: amount(-row.budget.remaining) })
+                          : $t("budgets.remaining", { amount: amount(row.budget.remaining) })
+                      }}
+                    </span>
+                  </template>
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
+        <p v-if="showBudgets" data-budget-note class="mt-3 text-sm text-slate-500">
+          {{ $t("dashboard.budgetNote") }}
+          <RouterLink :to="{ name: 'budgets', query: { month } }" class="text-brand hover:text-brand-dark">
+            {{ $t("dashboard.manageBudgets") }}
+          </RouterLink>
+        </p>
       </template>
     </div>
   </section>

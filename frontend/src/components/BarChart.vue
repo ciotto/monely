@@ -4,7 +4,8 @@ import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 Chart.register(BarController, BarElement, CategoryScale, Legend, LinearScale, Tooltip);
 
-// A horizontal bar chart: one bar per label and dataset, the values formatted by `format` (`formatAxis` on the axis)
+// A horizontal bar chart: one bar per label and dataset, the values formatted by `format` (`formatAxis` on the axis);
+// datasets sharing a `stack` are drawn as a single bar, and their null values are left out
 const props = defineProps({
   labels: { type: Array, required: true },
   datasets: { type: Array, required: true },
@@ -20,7 +21,8 @@ function data() {
   return {
     labels: props.labels,
     // Thin bars with rounded ends, square on the baseline
-    datasets: props.datasets.map((dataset) => ({
+    datasets: props.datasets.map((dataset, index) => ({
+      stack: String(index),
       ...dataset,
       borderRadius: 4,
       maxBarThickness: 14,
@@ -42,16 +44,20 @@ onMounted(() => {
       interaction: { mode: "index", axis: "y", intersect: false },
       scales: {
         x: {
+          stacked: true,
           beginAtZero: true,
           border: { display: false },
           grid: { color: "#f1f5f9" },
           ticks: { color: "#64748b", maxTicksLimit: 5, callback: (value) => props.formatAxis(value) },
         },
-        y: { border: { display: false }, grid: { display: false }, ticks: { color: "#334155" } },
+        y: { stacked: true, border: { display: false }, grid: { display: false }, ticks: { color: "#334155" } },
       },
       plugins: {
         legend: { position: "top", align: "end", labels: { boxWidth: 12, boxHeight: 12, color: "#334155" } },
-        tooltip: { callbacks: { label: (item) => `${item.dataset.label}: ${props.format(item.parsed.x)}` } },
+        tooltip: {
+          filter: (item) => item.raw !== null,
+          callbacks: { label: (item) => `${item.dataset.label}: ${props.format(item.parsed.x)}` },
+        },
       },
     },
   });

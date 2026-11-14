@@ -77,8 +77,10 @@ shows where the money goes. It is designed to be used by a single household, wit
   amount) in every month from their start date to their end date, even when no occurrence is due, so that their cost
   is spread over the following months; the transactions that register their occurrences are therefore left out, not to
   count them twice.
-- **Monthly dashboard**: income, expenses and balance for the selected month, breakdown by category, and comparison with
-  the same month of the previous year.
+- **Monthly dashboard**: income, expenses and balance for the selected month, breakdown by category, comparison with
+  the same month of the previous year. In the expenses by category, the categories with a budget show how much of it
+  the month used: the bar of the month stacks what is left of the budget, or what goes over it, on what was spent
+  (recurring shares included); only for all the wallets, as the budgets cover them all.
 
 ## Out of scope (on purpose)
 
@@ -102,7 +104,7 @@ Tags were initially in this list and have been moved into the data model.
 - [x] **M5 – Polish for v0.1**: i18n, installation docs, backup/CSV export, published Docker image.
 - [x] **M6 – v0.2**: transfers between wallets.
 - [x] **M7 – v0.3**: recurring transactions.
-- [ ] **M8 – v0.4**: budgeting by category (done) and goals.
+- [x] **M8 – v0.4**: budgeting by category.
 - [ ] **M9 – v0.5**: family balance: identify shared expenses and compute how much each family member has to transfer to
   the joint account to cover them.
 - [ ] **M10 – v0.6**: CSV/xlsx import from banks: raw import, duplicate handling and reconciliation, warnings for

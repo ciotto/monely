@@ -2,8 +2,8 @@ from collections import defaultdict
 
 from django.db.models import Q, Sum
 
-from core.dashboard import add_months, amount
 from core.models import Budget, RecurringTransaction, Transaction
+from core.reports import add_months, amount
 
 
 def build_budgets(month):

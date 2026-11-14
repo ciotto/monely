@@ -61,6 +61,10 @@
       "net": "Balance"
     },
     "byCategory": "By category",
+    "budgetLeft": "Budget left",
+    "overBudget": "Over budget",
+    "budgetNote": "For the categories with a budget, the current month counts the recurring transactions with their monthly share, also when they are not due.",
+    "manageBudgets": "Manage budgets",
     "kind": "Show",
     "kinds": {
       "expenses": "Expenses",
@@ -78,7 +82,8 @@
       "net": "Balance by category, compared with the previous month and the same month of the previous year"
     },
     "columns": {
-      "category": "Category"
+      "category": "Category",
+      "budget": "Budget"
     },
     "uncategorized": "Uncategorized",
     "balances": "Balances at the end of {month}",

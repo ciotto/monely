@@ -4,8 +4,8 @@ from decimal import Decimal
 import pytest
 from django.urls import reverse
 
-from core.dashboard import add_months
-from core.models import Category, Transaction, Wallet
+from core.models import Budget, Category, Transaction, Wallet
+from core.reports import add_months
 
 
 @pytest.fixture
@@ -111,6 +111,7 @@ class TestDashboardView:
                             "previous_year_expenses": "0.00",
                         },
                     ],
+                    "budgets": [],
                 }
             ],
             # The balance includes everything up to the end of the month
@@ -148,6 +149,7 @@ class TestDashboardView:
                 "net": "0.00",
                 "previous_year": {"income": "0.00", "expenses": "0.00", "net": "0.00"},
                 "categories": [],
+                "budgets": [],
             }
         ]
         assert response.json()["wallets"][0]["balance"] == "0.00"
@@ -217,6 +219,41 @@ class TestDashboardView:
         assert response.json()["wallets"] == [
             {"id": archived.pk, "name": "Old card", "currency": "USD", "balance": "-20.00"}
         ]
+
+    def test_budgets_by_currency(self, user_client, wallet, groceries):
+        Wallet.objects.create(name="US account", currency="USD")
+        Budget.objects.create(category=groceries, amount=300)
+        Budget.objects.create(category=groceries, currency="USD", amount=50)
+        # A currency without wallets nor transactions is shown for its budgets
+        Budget.objects.create(category=groceries, currency="GBP", amount=20)
+        create_transaction(wallet, datetime.date(2026, 11, 2), "-40", groceries)
+
+        response = user_client.get(self.url, {"month": "2026-11"})
+
+        budgets = {item["currency"]: item["budgets"] for item in response.json()["currencies"]}
+        assert [(budget["currency"], budget["spent"]) for budget in budgets["EUR"]] == [("EUR", "40.00")]
+        assert [(budget["currency"], budget["amount"]) for budget in budgets["USD"]] == [("USD", "50.00")]
+        assert [(budget["currency"], budget["amount"]) for budget in budgets["GBP"]] == [("GBP", "20.00")]
+        assert set(budgets["EUR"][0]) == {
+            "id",
+            "category",
+            "currency",
+            "amount",
+            "transactions",
+            "recurring",
+            "spent",
+            "remaining",
+            "recurring_transactions",
+        }
+
+    def test_budgets_left_out_for_a_wallet(self, user_client, wallet, groceries):
+        """The budgets cover all the wallets, so they would not match the totals of one."""
+        Budget.objects.create(category=groceries, amount=300)
+        Budget.objects.create(category=groceries, currency="USD", amount=50)
+
+        response = user_client.get(self.url, {"month": "2026-11", "wallet": wallet.pk})
+
+        assert [(item["currency"], item["budgets"]) for item in response.json()["currencies"]] == [("EUR", [])]
 
     @pytest.mark.parametrize(
         "params,field", [({"month": "2026-13"}, "month"), ({"month": "11/2026"}, "month"), ({"wallet": 999}, "wallet")]

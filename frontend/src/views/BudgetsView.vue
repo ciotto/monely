@@ -1,20 +1,23 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
 
 import { apiFetch } from "@/api/client";
+import BudgetProgress from "@/components/BudgetProgress.vue";
 import CategoryIcon from "@/components/CategoryIcon.vue";
 import { addMonths, formatAmount } from "@/format";
 
 const { t, locale } = useI18n();
+const route = useRoute();
 // The budgets of the month, with what their categories spent: the backend spreads the recurring transactions
 const summary = ref(null);
 const categoryList = ref([]);
 const categories = computed(() => Object.fromEntries(categoryList.value.map((item) => [item.id, item])));
 // Budgets are in the currencies of the wallets, as amounts are never converted
 const currencies = ref([]);
-// The backend chooses the current month on the first load
-const month = ref(null);
+// The month can come from the dashboard, otherwise the backend chooses the current one on the first load
+const month = ref(route.query.month ?? null);
 const draft = ref({});
 // The id of the budget being edited, if any
 const editing = ref(null);
@@ -102,11 +105,6 @@ async function remove(budget) {
     return;
   }
   await load();
-}
-
-// The share of the budget already spent, from 0 to 100
-function progress(budget) {
-  return Math.min(Math.max(Number(budget.spent) / Number(budget.amount), 0), 1) * 100;
 }
 
 function amount(value, currency) {
@@ -280,49 +278,7 @@ onMounted(async () => {
           >
             {{ message }}
           </span>
-          <div
-            role="progressbar"
-            :aria-label="categories[budget.category].name"
-            aria-valuemin="0"
-            aria-valuemax="100"
-            :aria-valuenow="Math.round(progress(budget))"
-            class="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"
-          >
-            <div
-              class="h-full rounded-full"
-              :class="Number(budget.remaining) < 0 ? 'bg-expense' : 'bg-brand'"
-              :style="{ width: `${progress(budget)}%` }"
-            />
-          </div>
-          <div class="mt-1 flex flex-wrap justify-between gap-x-4 text-slate-500">
-            <span data-breakdown class="tabular-nums">
-              {{
-                $t("budgets.breakdown", {
-                  transactions: amount(budget.transactions, budget.currency),
-                  recurring: amount(budget.recurring, budget.currency),
-                })
-              }}
-            </span>
-            <span
-              data-remaining
-              class="tabular-nums"
-              :class="{ 'font-medium text-expense': Number(budget.remaining) < 0 }"
-            >
-              {{
-                Number(budget.remaining) < 0
-                  ? $t("budgets.over", { amount: amount(-budget.remaining, budget.currency) })
-                  : $t("budgets.remaining", { amount: amount(budget.remaining, budget.currency) })
-              }}
-            </span>
-          </div>
-          <ul v-if="budget.recurring_transactions.length" data-recurring class="mt-1 text-xs text-slate-500">
-            <li v-for="item in budget.recurring_transactions" :key="item.id" class="flex justify-between gap-4">
-              <span>{{ item.description }}</span>
-              <span class="tabular-nums">{{
-                $t("budgets.perMonth", { amount: amount(item.share, budget.currency) })
-              }}</span>
-            </li>
-          </ul>
+          <BudgetProgress :budget="budget" :label="categories[budget.category].name" />
         </li>
       </ul>
     </template>

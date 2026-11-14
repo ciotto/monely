@@ -1,20 +1,12 @@
 from django.db.models import Q, Sum
 
+from core.budgets import build_budgets
 from core.models import Transaction, Wallet
+from core.reports import add_months, amount
 
 # Amounts are never converted, so every total is computed per currency
 INCOME = Sum("amount", filter=Q(amount__gt=0), default=0)
 EXPENSES = Sum("amount", filter=Q(amount__lt=0), default=0)
-
-
-def add_months(month, months):
-    """Returns the first day of the month `months` away from `month`, itself the first day of a month."""
-    index = month.year * 12 + month.month - 1 + months
-    return month.replace(year=index // 12, month=index % 12 + 1)
-
-
-def amount(value):
-    return f"{value:.2f}"
 
 
 def totals(transactions, month):
@@ -31,7 +23,7 @@ def totals(transactions, month):
 def build_dashboard(month, wallet=None):
     """
     Summarizes a month: the totals are compared with the same month of the previous year, the categories also with the
-    previous month.
+    previous month. The budgets cover all the wallets, so they are left out when one is chosen.
 
     The balances of the wallets are computed at the end of the month; archived wallets are listed only when chosen.
     """
@@ -44,9 +36,14 @@ def build_dashboard(month, wallet=None):
     periods = {"": month, "previous_month_": add_months(month, -1), "previous_year_": add_months(month, -12)}
     period_totals = {prefix: totals(transactions, start) for prefix, start in periods.items()}
     keys = set().union(*period_totals.values())
+    budgets = build_budgets(month)["budgets"] if wallet is None else []
 
-    # A currency is shown when a wallet uses it, or when it has transactions to compare
-    currencies = sorted({currency for currency, _ in keys} | set(wallets.values_list("currency", flat=True)))
+    # A currency is shown when a wallet uses it, or when it has transactions to compare or budgets
+    currencies = sorted(
+        {currency for currency, _ in keys}
+        | set(wallets.values_list("currency", flat=True))
+        | {budget["currency"] for budget in budgets}
+    )
     empty = {"income": 0, "expenses": 0}
     summaries = []
     for currency in currencies:
@@ -81,6 +78,7 @@ def build_dashboard(month, wallet=None):
                 "categories": [
                     {key: value if key == "category" else amount(value) for key, value in row.items()} for row in rows
                 ],
+                "budgets": [budget for budget in budgets if budget["currency"] == currency],
             }
         )
 
