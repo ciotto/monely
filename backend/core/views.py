@@ -28,15 +28,18 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from core.budgets import build_budgets
 from core.dashboard import build_dashboard
-from core.models import Category, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
+from core.models import Budget, Category, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
 from core.serializers import (
     RECURRING_ENDED_ERROR,
     TRANSFER_LEG_ERROR,
     AdminUserSerializer,
+    BudgetSerializer,
     CategorySerializer,
     DashboardFilterSerializer,
     LoginSerializer,
+    MonthFilterSerializer,
     OwnerSerializer,
     RecurringTransactionSerializer,
     SetupSerializer,
@@ -165,6 +168,25 @@ class TagListView(ListCreateAPIView):
 class TagDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+
+
+class BudgetListView(ListCreateAPIView):
+    queryset = Budget.objects.all()
+    serializer_class = BudgetSerializer
+
+
+class BudgetDetailView(RetrieveUpdateDestroyAPIView):
+    queryset = Budget.objects.all()
+    serializer_class = BudgetSerializer
+
+
+class BudgetSummaryView(APIView):
+    """The budgets of a month, with what their categories spent."""
+
+    def get(self, request):
+        filters = MonthFilterSerializer(data=request.query_params)
+        filters.is_valid(raise_exception=True)
+        return Response(build_budgets(filters.validated_data.get("month", timezone.localdate()).replace(day=1)))
 
 
 class TransactionFilterMixin:
@@ -320,6 +342,7 @@ class MaintenanceDataView(APIView):
         "transfers": Transfer,
         "recurring_transactions": RecurringTransaction,
         "wallets": Wallet,
+        "budgets": Budget,
         "categories": Category,
         "tags": Tag,
     }

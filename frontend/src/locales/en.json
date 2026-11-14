@@ -3,6 +3,7 @@
     "tagline": "Family finances, made simple."
   },
   "nav": {
+    "budgets": "Budget",
     "categories": "Categories",
     "dashboard": "Dashboard",
     "language": "Language",
@@ -428,6 +429,36 @@
       }
     }
   },
+  "budgets": {
+    "title": "Budget",
+    "intro": "How much each category can spend every month. Recurring transactions count with their monthly share in every month, even when they are not due: a yearly bill of €1,200 weighs €100 a month, and its payment is not counted again.",
+    "loading": "Loading…",
+    "empty": "No budgets yet: choose a category and how much it can spend each month.",
+    "month": "Month",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "category": "Category",
+    "chooseCategory": "Choose a category",
+    "currency": "Currency",
+    "amount": "Monthly amount",
+    "amountPlaceholder": "Per month",
+    "add": "Add",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirmDelete": "Delete the budget of {name}? The category and its transactions are kept.",
+    "spentOf": "{spent} of {amount}",
+    "breakdown": "Transactions {transactions} · Recurring {recurring}",
+    "remaining": "{amount} left",
+    "over": "{amount} over budget",
+    "perMonth": "{amount}/month",
+    "errors": {
+      "load": "Unable to load the budgets: try again later.",
+      "save": "Unable to save the budget: try again later.",
+      "delete": "Unable to delete the budget: try again later."
+    }
+  },
   "notFound": {
     "title": "Page not found",
     "back": "Back to the dashboard"
@@ -441,12 +472,13 @@
     },
     "deleteData": {
       "title": "Delete all data",
-      "description": "Deletes every transaction, transfer, recurring transaction, wallet, category and tag. The users are kept. This cannot be undone: export the transactions first if you want a backup.",
+      "description": "Deletes every transaction, transfer, recurring transaction, wallet, budget, category and tag. The users are kept. This cannot be undone: export the transactions first if you want a backup.",
       "counts": {
         "transactions": "transactions",
         "transfers": "transfers",
         "recurring_transactions": "recurring transactions",
         "wallets": "wallets",
+        "budgets": "budgets",
         "categories": "categories",
         "tags": "tags"
       },
@@ -455,7 +487,7 @@
       "confirmWord": "DELETE",
       "submit": "Delete all data",
       "deleting": "Deleting…",
-      "done": "Deleted: {transactions} transactions, {transfers} transfers, {recurring_transactions} recurring transactions, {wallets} wallets, {categories} categories, {tags} tags.",
+      "done": "Deleted: {transactions} transactions, {transfers} transfers, {recurring_transactions} recurring transactions, {wallets} wallets, {budgets} budgets, {categories} categories, {tags} tags.",
       "errors": {
         "delete": "Unable to delete the data: try again later."
       }

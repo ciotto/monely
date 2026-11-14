@@ -5,7 +5,7 @@ import pytest
 from django.db import IntegrityError
 from django.db.models import ProtectedError
 
-from core.models import Category, Tag, Transaction, User, Wallet
+from core.models import Budget, Category, RecurringTransaction, Tag, Transaction, User, Wallet
 
 
 @pytest.mark.django_db
@@ -82,3 +82,43 @@ class TestTransaction:
     def test_wallet_with_transactions_cannot_be_deleted(self, transaction):
         with pytest.raises(ProtectedError):
             transaction.wallet.delete()
+
+
+@pytest.mark.django_db
+class TestBudget:
+    @pytest.fixture
+    def budget(self):
+        return Budget.objects.create(category=Category.objects.create(name="Groceries"), amount=Decimal("300.00"))
+
+    def test_str(self, budget):
+        assert str(budget) == "Groceries 300.00 EUR"
+
+    def test_unique_by_category_and_currency(self, budget):
+        Budget.objects.create(category=budget.category, currency="USD", amount=100)
+
+        with pytest.raises(IntegrityError):
+            Budget.objects.create(category=budget.category, amount=100)
+
+    def test_deleting_the_category_deletes_the_budget(self, budget):
+        budget.category.delete()
+
+        assert not Budget.objects.exists()
+
+
+@pytest.mark.parametrize(
+    "frequency, interval, amount, expected",
+    [
+        ("monthly", 1, "-800.00", "-800.00"),
+        ("monthly", 3, "-100.00", "-33.33"),
+        ("yearly", 1, "-1200.00", "-100.00"),
+        ("yearly", 2, "-1000.00", "-41.67"),
+        # 52 weeks in 12 months
+        ("weekly", 1, "-30.00", "-130.00"),
+        ("weekly", 2, "-30.00", "-65.00"),
+        ("monthly", 1, "1500.00", "1500.00"),
+    ],
+)
+def test_recurring_monthly_amount(frequency, interval, amount, expected):
+    recurring = RecurringTransaction(frequency=frequency, interval=interval, amount=Decimal(amount))
+
+    assert recurring.monthly_amount == Decimal(expected)

@@ -7,7 +7,7 @@ from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from core.models import Category, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
+from core.models import Budget, Category, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
 
 # The transactions of a transfer change only through the transfer, which keeps them consistent
 TRANSFER_LEG_ERROR = _("This transaction belongs to a transfer: edit the transfer instead.")
@@ -75,6 +75,26 @@ class CategorySerializer(LabelSerializer):
 class TagSerializer(LabelSerializer):
     class Meta(LabelSerializer.Meta):
         model = Tag
+
+
+class BudgetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Budget
+        fields = ("id", "category", "currency", "amount", "created_at")
+        read_only_fields = ("created_at",)
+        # The uniqueness is checked in validate(), with a clearer message
+        validators = []
+
+    def validate(self, attrs):
+        # A partial update keeps the other values
+        category = attrs.get("category", getattr(self.instance, "category", None))
+        currency = attrs.get("currency", getattr(self.instance, "currency", Budget._meta.get_field("currency").default))
+        queryset = Budget.objects.filter(category=category, currency=currency)
+        if self.instance is not None:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        if queryset.exists():
+            raise serializers.ValidationError({"category": _("This category already has a budget in this currency.")})
+        return attrs
 
 
 class MovementSerializer(serializers.ModelSerializer):
@@ -286,10 +306,15 @@ class TransactionImportSerializer(serializers.Serializer):
     file = serializers.FileField()
 
 
-class DashboardFilterSerializer(serializers.Serializer):
-    """The query parameters of the dashboard: the month (e.g. 2026-11, the current one by default) and a wallet."""
+class MonthFilterSerializer(serializers.Serializer):
+    """The month of a report, e.g. 2026-11; the current one by default."""
 
     month = serializers.DateField(required=False, input_formats=["%Y-%m"])
+
+
+class DashboardFilterSerializer(MonthFilterSerializer):
+    """The query parameters of the dashboard: the month and a wallet."""
+
     wallet = serializers.PrimaryKeyRelatedField(required=False, queryset=Wallet.objects.all())
 
 

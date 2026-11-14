@@ -1,5 +1,6 @@
 import calendar
 import datetime
+from decimal import Decimal
 from operator import attrgetter
 
 from django.conf import settings
@@ -101,7 +102,7 @@ class Label(models.Model):
 
 
 class Category(Label):
-    """Classifies a transaction (e.g. groceries, rent, salary), for the reports and later the budgets."""
+    """Classifies a transaction (e.g. groceries, rent, salary), for the reports and the budgets."""
 
     # The kebab-case name of a Lucide icon (e.g. shopping-cart); the frontend offers a curated subset
     icon = models.CharField(
@@ -114,6 +115,34 @@ class Category(Label):
     class Meta(Label.Meta):
         verbose_name = _("category")
         verbose_name_plural = _("categories")
+
+
+class Budget(models.Model):
+    """The amount that a category can spend every month, in one currency: amounts are never converted."""
+
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="budgets", verbose_name=_("category"))
+    currency = models.CharField(
+        _("currency"),
+        max_length=3,
+        default="EUR",
+        validators=[RegexValidator(r"^[A-Z]{3}\Z", _("Enter a three-letter ISO 4217 currency code, e.g. EUR."))],
+    )
+    # The monthly limit of the expenses, so it is positive
+    amount = models.DecimalField(
+        _("amount"), max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))]
+    )
+    created_at = models.DateTimeField(_("created at"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("budget")
+        verbose_name_plural = _("budgets")
+        ordering = ("currency", Lower("category__name"))
+        constraints = [
+            models.UniqueConstraint(fields=("category", "currency"), name="core_budget_unique_category_currency")
+        ]
+
+    def __str__(self):
+        return f"{self.category} {self.amount} {self.currency}"
 
 
 class Tag(Label):
@@ -251,6 +280,15 @@ class RecurringTransaction(models.Model):
     @property
     def is_ended(self):
         return self.end_date is not None and self.next_date > self.end_date
+
+    @property
+    def monthly_amount(self):
+        """The cost of a month, spreading each occurrence over the months until the following one (rounded to cents)."""
+        if self.frequency == self.Frequency.WEEKLY:
+            value = self.amount * 52 / (12 * self.interval)
+        else:
+            value = self.amount / (self.interval * (12 if self.frequency == self.Frequency.YEARLY else 1))
+        return value.quantize(Decimal("0.01"))
 
     def occurrence(self, index):
         """The date of the occurrence `index`, starting from 0."""

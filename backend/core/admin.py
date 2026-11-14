@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 
-from core.models import Category, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
+from core.models import Budget, Category, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
 
 
 @admin.register(User)
@@ -39,6 +39,13 @@ class LabelAdmin(admin.ModelAdmin):
 @admin.register(Category)
 class CategoryAdmin(LabelAdmin):
     list_display = ("icon", "name", "color")
+
+
+@admin.register(Budget)
+class BudgetAdmin(admin.ModelAdmin):
+    list_display = ("category", "amount", "currency")
+    list_filter = ("currency",)
+    list_select_related = ("category",)
 
 
 @admin.register(Transaction)

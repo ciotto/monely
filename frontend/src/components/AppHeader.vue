@@ -60,6 +60,9 @@ async function signOut() {
           <RouterLink :to="{ name: 'transactions' }" class="hover:text-brand" active-class="font-semibold text-brand">
             {{ $t("nav.transactions") }}
           </RouterLink>
+          <RouterLink :to="{ name: 'budgets' }" class="hover:text-brand" active-class="font-semibold text-brand">
+            {{ $t("nav.budgets") }}
+          </RouterLink>
         </nav>
       </div>
       <div v-if="auth.user" ref="menu" class="relative text-sm">

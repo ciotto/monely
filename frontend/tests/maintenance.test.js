@@ -6,8 +6,16 @@ import { setLocale } from "@/i18n";
 
 import { ADMIN, mockFetch, mountAt, USER } from "./helpers";
 
-const COUNTS = { transactions: 120, transfers: 4, recurring_transactions: 5, wallets: 3, categories: 12, tags: 2 };
-const EMPTY = { transactions: 0, transfers: 0, recurring_transactions: 0, wallets: 0, categories: 0, tags: 0 };
+const COUNTS = {
+  transactions: 120,
+  transfers: 4,
+  recurring_transactions: 5,
+  wallets: 3,
+  budgets: 6,
+  categories: 12,
+  tags: 2,
+};
+const EMPTY = Object.fromEntries(Object.keys(COUNTS).map((name) => [name, 0]));
 
 // Mounted apps would otherwise keep reacting to the shared auth state of the next tests
 enableAutoUnmount(afterEach);
@@ -36,6 +44,7 @@ describe("maintenance", () => {
       "4transfers",
       "5recurring transactions",
       "3wallets",
+      "6budgets",
       "12categories",
       "2tags",
     ]);
@@ -58,13 +67,14 @@ describe("maintenance", () => {
     await flushPromises();
     expect(fetch).toHaveBeenLastCalledWith("/api/maintenance/data/", expect.objectContaining({ method: "DELETE" }));
     expect(wrapper.find("[role=status]").text()).toBe(
-      "Deleted: 120 transactions, 4 transfers, 5 recurring transactions, 3 wallets, 12 categories, 2 tags.",
+      "Deleted: 120 transactions, 4 transfers, 5 recurring transactions, 3 wallets, 6 budgets, 12 categories, 2 tags.",
     );
     expect(counts(wrapper)).toEqual([
       "0transactions",
       "0transfers",
       "0recurring transactions",
       "0wallets",
+      "0budgets",
       "0categories",
       "0tags",
     ]);

@@ -47,7 +47,7 @@ describe("App", () => {
       const { wrapper } = await mountAt("/");
       expect(wrapper.find("h1").text()).toBe("Dashboard");
       expect(wrapper.text()).toContain("No data yet");
-      expect(wrapper.find("header nav").text()).toBe("DashboardTransactions");
+      expect(wrapper.find("header nav").text()).toBe("DashboardTransactionsBudget");
       expect(wrapper.find("header").text()).toContain("anna@example.com");
       expect(wrapper.find("header").text()).not.toContain("Wallets");
 

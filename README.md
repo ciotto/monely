@@ -31,7 +31,9 @@ shows where the money goes. It is designed to be used by a single household, wit
 - **User**: custom user model that logs in with email (no username).
 - **Wallet**: a place where money lives (bank account, cash, credit card, ...). It has a name, a single currency, one
   or more owners (users) and can be archived instead of deleted.
-- **Category**: classifies transactions (e.g. groceries, rent, salary). Used for reports and, later, budgets.
+- **Category**: classifies transactions (e.g. groceries, rent, salary). Used for reports and budgets.
+- **Budget**: how much a category can spend every month, in one currency; a category can have one budget per
+  currency. What it has spent is never stored, it is computed for each month.
 - **Tag**: free-form labels that can be attached to many transactions (e.g. `holiday-2026`, `car`), orthogonal to
   categories.
 - **Transaction**: a single money movement on a wallet, with a date, a signed amount, a description, an optional
@@ -68,7 +70,13 @@ shows where the money goes. It is designed to be used by a single household, wit
   (case-insensitive) and created when missing, the two rows of a transfer share the value of the `transfer` column,
   and a file with any invalid row is rejected as a whole.
 - **Maintenance** (admins only): technical tools, starting with deleting all the data (transactions, transfers,
-  recurring transactions, wallets, categories and tags; the users are kept) after typing a confirmation word.
+  recurring transactions, wallets, budgets, categories and tags; the users are kept) after typing a confirmation word.
+- **Budget**: set a monthly amount for each category and follow, month by month, how much it has spent and how much is
+  left. The spent amount is net of the refunds in the same category and leaves transfers out. Recurring transactions
+  count with their monthly share (e.g. a yearly bill of 1,200 counts 100 a month, one every 2 weeks 52/24 of its
+  amount) in every month from their start date to their end date, even when no occurrence is due, so that their cost
+  is spread over the following months; the transactions that register their occurrences are therefore left out, not to
+  count them twice.
 - **Monthly dashboard**: income, expenses and balance for the selected month, breakdown by category, and comparison with
   the same month of the previous year.
 
@@ -94,7 +102,7 @@ Tags were initially in this list and have been moved into the data model.
 - [x] **M5 – Polish for v0.1**: i18n, installation docs, backup/CSV export, published Docker image.
 - [x] **M6 – v0.2**: transfers between wallets.
 - [x] **M7 – v0.3**: recurring transactions.
-- [ ] **M8 – v0.4**: budgeting by category and goals.
+- [ ] **M8 – v0.4**: budgeting by category (done) and goals.
 - [ ] **M9 – v0.5**: family balance: identify shared expenses and compute how much each family member has to transfer to
   the joint account to cover them.
 - [ ] **M10 – v0.6**: CSV/xlsx import from banks: raw import, duplicate handling and reconciliation, warnings for

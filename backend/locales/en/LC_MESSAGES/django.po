@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 23:41+0000\n"
+"POT-Creation-Date: 2026-11-14 07:07+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -30,163 +30,172 @@ msgstr ""
 msgid "Important dates"
 msgstr ""
 
-#: core/models.py:19
+#: core/models.py:20
 msgid "The email must be set"
 msgstr ""
 
-#: core/models.py:36
+#: core/models.py:37
 msgid "Superuser must have is_staff=True."
 msgstr ""
 
-#: core/models.py:38
+#: core/models.py:39
 msgid "Superuser must have is_superuser=True."
 msgstr ""
 
-#: core/models.py:45
+#: core/models.py:46
 msgid "email address"
 msgstr ""
 
-#: core/models.py:53
+#: core/models.py:54
 msgid "user"
 msgstr ""
 
-#: core/models.py:54
+#: core/models.py:55
 msgid "users"
 msgstr ""
 
-#: core/models.py:63 core/models.py:86
+#: core/models.py:64 core/models.py:87
 msgid "name"
 msgstr ""
 
-#: core/models.py:65
+#: core/models.py:66 core/models.py:125
 msgid "currency"
 msgstr ""
 
-#: core/models.py:68
+#: core/models.py:69 core/models.py:128
 msgid "Enter a three-letter ISO 4217 currency code, e.g. EUR."
 msgstr ""
 
-#: core/models.py:70
+#: core/models.py:71
 msgid "owners"
 msgstr ""
 
-#: core/models.py:71
+#: core/models.py:72
 msgid "archived"
 msgstr ""
 
-#: core/models.py:72 core/models.py:135 core/models.py:177 core/models.py:232
+#: core/models.py:73 core/models.py:134 core/models.py:164 core/models.py:215
+#: core/models.py:270
 msgid "created at"
 msgstr ""
 
-#: core/models.py:75 core/models.py:154 core/models.py:210
+#: core/models.py:76 core/models.py:183 core/models.py:248
 msgid "wallet"
 msgstr ""
 
-#: core/models.py:76
+#: core/models.py:77
 msgid "wallets"
 msgstr ""
 
-#: core/models.py:88
+#: core/models.py:89
 msgid "color"
 msgstr ""
 
-#: core/models.py:91
+#: core/models.py:92
 msgid "Enter a hexadecimal color, e.g. #2563eb."
 msgstr ""
 
-#: core/models.py:108
+#: core/models.py:109
 msgid "icon"
 msgstr ""
 
-#: core/models.py:111
+#: core/models.py:112
 msgid "Enter the name of an icon, e.g. shopping-cart."
 msgstr ""
 
-#: core/models.py:115 core/models.py:164 core/models.py:220
+#: core/models.py:116 core/models.py:123 core/models.py:193 core/models.py:258
 msgid "category"
 msgstr ""
 
-#: core/models.py:116
+#: core/models.py:117
 msgid "categories"
 msgstr ""
 
-#: core/models.py:123
-msgid "tag"
-msgstr ""
-
-#: core/models.py:124 core/models.py:166 core/models.py:222
-msgid "tags"
-msgstr ""
-
-#: core/models.py:138 core/models.py:175
-msgid "transfer"
-msgstr ""
-
-#: core/models.py:139
-msgid "transfers"
-msgstr ""
-
-#: core/models.py:155
-msgid "date"
-msgstr ""
-
-#: core/models.py:156 core/models.py:212
+#: core/models.py:132 core/models.py:185 core/models.py:250
 msgid "amount"
 msgstr ""
 
-#: core/models.py:157 core/models.py:213
+#: core/models.py:137
+msgid "budget"
+msgstr ""
+
+#: core/models.py:138
+msgid "budgets"
+msgstr ""
+
+#: core/models.py:152
+msgid "tag"
+msgstr ""
+
+#: core/models.py:153 core/models.py:195 core/models.py:260
+msgid "tags"
+msgstr ""
+
+#: core/models.py:167 core/models.py:204
+msgid "transfer"
+msgstr ""
+
+#: core/models.py:168
+msgid "transfers"
+msgstr ""
+
+#: core/models.py:184
+msgid "date"
+msgstr ""
+
+#: core/models.py:186 core/models.py:251
 msgid "description"
 msgstr ""
 
-#: core/models.py:167 core/models.py:223
+#: core/models.py:196 core/models.py:261
 msgid "notes"
 msgstr ""
 
-#: core/models.py:180
-msgid "transaction"
-msgstr ""
-
-#: core/models.py:181
-msgid "transactions"
-msgstr ""
-
-#: core/models.py:204
-msgid "weekly"
-msgstr ""
-
-#: core/models.py:205
-msgid "monthly"
-msgstr ""
-
-#: core/models.py:206
-msgid "yearly"
-msgstr ""
-
-#: core/models.py:224
-msgid "frequency"
-msgstr ""
-
-#: core/models.py:226
-msgid "interval"
-msgstr ""
-
-#: core/models.py:228
-msgid "start date"
-msgstr ""
-
-#: core/models.py:229
-msgid "end date"
-msgstr ""
-
-#: core/models.py:231
-msgid "next date"
-msgstr ""
-
-#: core/models.py:235
+#: core/models.py:213 core/models.py:273
 msgid "recurring transaction"
 msgstr ""
 
-#: core/models.py:236
+#: core/models.py:218
+msgid "transaction"
+msgstr ""
+
+#: core/models.py:219
+msgid "transactions"
+msgstr ""
+
+#: core/models.py:242
+msgid "weekly"
+msgstr ""
+
+#: core/models.py:243
+msgid "monthly"
+msgstr ""
+
+#: core/models.py:244
+msgid "yearly"
+msgstr ""
+
+#: core/models.py:262
+msgid "frequency"
+msgstr ""
+
+#: core/models.py:264
+msgid "interval"
+msgstr ""
+
+#: core/models.py:266
+msgid "start date"
+msgstr ""
+
+#: core/models.py:267
+msgid "end date"
+msgstr ""
+
+#: core/models.py:269
+msgid "next date"
+msgstr ""
+
+#: core/models.py:274
 msgid "recurring transactions"
 msgstr ""
 
@@ -202,31 +211,35 @@ msgstr ""
 msgid "This name is already in use."
 msgstr ""
 
-#: core/serializers.py:88 core/serializers.py:231 core/transactions_csv.py:193
+#: core/serializers.py:96
+msgid "This category already has a budget in this currency."
+msgstr ""
+
+#: core/serializers.py:108 core/serializers.py:246 core/transactions_csv.py:193
 msgid "This wallet is archived."
 msgstr ""
 
-#: core/serializers.py:93 core/transactions_csv.py:60
+#: core/serializers.py:113 core/transactions_csv.py:60
 msgid "The amount cannot be zero."
 msgstr ""
 
-#: core/serializers.py:173 core/serializers.py:286
+#: core/serializers.py:188 core/serializers.py:301
 msgid "The end date cannot precede the start date."
 msgstr ""
 
-#: core/serializers.py:233
+#: core/serializers.py:248
 msgid "Choose a wallet different from the source one."
 msgstr ""
 
-#: core/serializers.py:235
+#: core/serializers.py:250
 msgid "The wallets must use the same currency."
 msgstr ""
 
-#: core/serializers.py:331
+#: core/serializers.py:351
 msgid "You cannot change this on your own account."
 msgstr ""
 
-#: core/serializers.py:383
+#: core/serializers.py:403
 msgid "Invalid email or password."
 msgstr ""
 
@@ -276,7 +289,7 @@ msgstr ""
 msgid "The wallet uses %(currency)s."
 msgstr ""
 
-#: core/views.py:128
+#: core/views.py:131
 msgid "You cannot delete your own account."
 msgstr ""
 

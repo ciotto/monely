@@ -3,7 +3,7 @@ import datetime
 import pytest
 from django.urls import reverse
 
-from core.models import RecurringTransaction, Transaction, Transfer, User, Wallet
+from core.models import Budget, Category, RecurringTransaction, Transaction, Transfer, User, Wallet
 
 
 @pytest.mark.django_db
@@ -36,6 +36,14 @@ class TestUserAdmin:
         response = admin_client.get(reverse("admin:core_wallet_changelist"))
 
         assert response.status_code == 200
+
+    def test_budget_changelist(self, admin_client):
+        Budget.objects.create(category=Category.objects.create(name="Groceries"), amount=300)
+
+        response = admin_client.get(reverse("admin:core_budget_changelist"))
+
+        assert response.status_code == 200
+        assert "Groceries" in response.content.decode()
 
     @pytest.mark.parametrize("model", ["category", "tag"])
     def test_label_changelist(self, admin_client, model):

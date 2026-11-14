@@ -3,9 +3,17 @@ import datetime
 import pytest
 from django.urls import reverse
 
-from core.models import Category, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
+from core.models import Budget, Category, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
 
-EMPTY = {"transactions": 0, "transfers": 0, "recurring_transactions": 0, "wallets": 0, "categories": 0, "tags": 0}
+EMPTY = {
+    "transactions": 0,
+    "transfers": 0,
+    "recurring_transactions": 0,
+    "wallets": 0,
+    "budgets": 0,
+    "categories": 0,
+    "tags": 0,
+}
 
 
 @pytest.fixture
@@ -22,12 +30,10 @@ def data(user):
     bank.owners.add(user)
     cash = Wallet.objects.create(name="Cash", is_archived=True)
     tag = Tag.objects.create(name="car")
+    category = Category.objects.create(name="Transport")
+    Budget.objects.create(category=category, amount=100)
     item = Transaction.objects.create(
-        wallet=bank,
-        date=datetime.date(2026, 11, 1),
-        amount=-10,
-        description="Fuel",
-        category=Category.objects.create(name="Transport"),
+        wallet=bank, date=datetime.date(2026, 11, 1), amount=-10, description="Fuel", category=category
     )
     item.tags.add(tag)
     transfer = Transfer.objects.create()
@@ -58,6 +64,7 @@ class TestMaintenanceDataView:
             "transfers": 1,
             "recurring_transactions": 1,
             "wallets": 2,
+            "budgets": 1,
             "categories": 1,
             "tags": 1,
         }
@@ -71,6 +78,7 @@ class TestMaintenanceDataView:
             "transfers": 1,
             "recurring_transactions": 1,
             "wallets": 2,
+            "budgets": 1,
             "categories": 1,
             "tags": 1,
         }
