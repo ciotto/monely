@@ -2,7 +2,19 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 
-from core.models import Budget, Category, Contribution, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
+from core.models import (
+    BankMovement,
+    Budget,
+    Category,
+    Contribution,
+    ImportFormat,
+    RecurringTransaction,
+    Tag,
+    Transaction,
+    Transfer,
+    User,
+    Wallet,
+)
 
 
 @admin.register(User)
@@ -22,12 +34,26 @@ class UserAdmin(BaseUserAdmin):
     ordering = ("email",)
 
 
+class ImportFormatInline(admin.StackedInline):
+    model = ImportFormat
+
+
 @admin.register(Wallet)
 class WalletAdmin(admin.ModelAdmin):
     list_display = ("name", "currency", "is_shared", "is_archived")
     list_filter = ("is_shared", "is_archived", "currency")
     search_fields = ("name",)
     filter_horizontal = ("owners",)
+    inlines = (ImportFormatInline,)
+
+
+@admin.register(BankMovement)
+class BankMovementAdmin(admin.ModelAdmin):
+    list_display = ("date", "description", "amount", "wallet", "is_ignored")
+    list_filter = ("is_ignored", "wallet")
+    search_fields = ("description",)
+    date_hierarchy = "date"
+    list_select_related = ("wallet",)
 
 
 @admin.register(Tag)

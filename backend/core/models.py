@@ -86,6 +86,87 @@ class Wallet(models.Model):
         return self.name
 
 
+class ImportFormat(models.Model):
+    """
+    How to read the statements (CSV or xlsx) that the bank of a wallet exports: the columns are found by their header.
+
+    The amount is either a signed column, or the difference between an income and an expense column.
+    """
+
+    class DateFormat(models.TextChoices):
+        DAY_MONTH_YEAR = "%d/%m/%Y", "31/12/2026"
+        DAY_MONTH_SHORT_YEAR = "%d/%m/%y", "31/12/26"
+        DAY_MONTH_YEAR_DASH = "%d-%m-%Y", "31-12-2026"
+        DAY_MONTH_YEAR_DOT = "%d.%m.%Y", "31.12.2026"
+        ISO = "%Y-%m-%d", "2026-12-31"
+        MONTH_DAY_YEAR = "%m/%d/%Y", "12/31/2026"
+
+    class DecimalSeparator(models.TextChoices):
+        COMMA = ",", _("comma (1.234,56)")
+        DOT = ".", _("dot (1,234.56)")
+
+    class Delimiter(models.TextChoices):
+        SEMICOLON = ";", _("semicolon")
+        COMMA = ",", _("comma")
+        TAB = "\t", _("tab")
+
+    wallet = models.OneToOneField(
+        Wallet, on_delete=models.CASCADE, primary_key=True, related_name="import_format", verbose_name=_("wallet")
+    )
+    date_column = models.CharField(_("date column"), max_length=100)
+    # Only for the dates written as text: spreadsheets usually store real dates
+    date_format = models.CharField(
+        _("date format"), max_length=20, choices=DateFormat, default=DateFormat.DAY_MONTH_YEAR
+    )
+    amount_column = models.CharField(_("amount column"), max_length=100, blank=True)
+    income_column = models.CharField(_("income column"), max_length=100, blank=True)
+    expense_column = models.CharField(_("expense column"), max_length=100, blank=True)
+    description_column = models.CharField(_("description column"), max_length=100, blank=True)
+    # Only for the amounts written as text, like the dates
+    decimal_separator = models.CharField(
+        _("decimal separator"), max_length=1, choices=DecimalSeparator, default=DecimalSeparator.COMMA
+    )
+    # Only for the CSV files
+    delimiter = models.CharField(_("CSV delimiter"), max_length=1, choices=Delimiter, default=Delimiter.SEMICOLON)
+    # e.g. the credit cards that list the expenses as positive amounts
+    negate_amounts = models.BooleanField(_("invert the sign of the amounts"), default=False)
+
+    class Meta:
+        verbose_name = _("import format")
+        verbose_name_plural = _("import formats")
+
+    def __str__(self):
+        return str(self.wallet)
+
+
+class BankMovement(models.Model):
+    """
+    A movement read from a bank statement. It is not a transaction: it is reconciled with the transactions of its
+    wallet, to find the ones that were not entered.
+
+    Banks can change the other fields over time, so a movement is identified only by its date and amount.
+    """
+
+    wallet = models.ForeignKey(
+        Wallet, on_delete=models.CASCADE, related_name="bank_movements", verbose_name=_("wallet")
+    )
+    date = models.DateField(_("date"))
+    amount = models.DecimalField(_("amount"), max_digits=12, decimal_places=2)
+    # As written by the bank when it was imported
+    description = models.CharField(_("description"), max_length=200, blank=True)
+    # Not to be entered (e.g. a payment and its cancellation), so it is not reconciled
+    is_ignored = models.BooleanField(_("ignored"), default=False)
+    created_at = models.DateTimeField(_("created at"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("bank movement")
+        verbose_name_plural = _("bank movements")
+        ordering = ("-date", "-id")
+
+    def __str__(self):
+        return f"{self.date} {self.description} {self.amount}"
+
+
 class Label(models.Model):
     """A name that classifies the transactions; it is unique regardless of the case."""
 

@@ -1,11 +1,13 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref, useTemplateRef, watch } from "vue";
 import { ArrowLeftRight, Repeat, Users } from "@lucide/vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 
 import { apiFetch } from "@/api/client";
+import BankMovements from "@/components/BankMovements.vue";
 import CategoryIcon from "@/components/CategoryIcon.vue";
+import DropdownMenu from "@/components/DropdownMenu.vue";
 import { memberName, pendingTransfers, transferQuery } from "@/family";
 import { formatAmount, formatDate, today } from "@/format";
 
@@ -49,6 +51,15 @@ const filterErrors = ref([]);
 const imported = ref(null);
 const importErrors = ref([]);
 const importing = ref(false);
+const importInput = useTemplateRef("importInput");
+// The bank movements that no transaction reconciles yet, counted on the wallets whose statements can be imported
+const missing = ref([]);
+const statementWallets = computed(() =>
+  walletList.value
+    .filter((wallet) => wallet.import_format && !wallet.is_archived)
+    .map((wallet) => ({ ...wallet, missing: missing.value.filter((item) => item.wallet === wallet.id).length })),
+);
+const missingCount = computed(() => statementWallets.value.reduce((total, wallet) => total + wallet.missing, 0));
 
 function byId(list) {
   return Object.fromEntries(list.map((item) => [item.id, item]));
@@ -193,26 +204,65 @@ onMounted(() => {
     <div class="flex items-center justify-between gap-4">
       <h1 class="text-2xl font-semibold">{{ $t("transactions.title") }}</h1>
       <div class="flex flex-wrap items-center justify-end gap-2 text-sm font-medium">
-        <a
-          :href="`/api/transactions/export/${query}`"
-          download
-          class="rounded border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
+        <RouterLink
+          v-if="statementWallets.length === 1"
+          :to="{ name: 'wallet-import', params: { id: statementWallets[0].id } }"
+          data-statements
+          class="flex items-center gap-2 rounded border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
+          :title="$t('transactions.toCheck', missingCount)"
         >
-          {{ $t("transactions.export") }}
-        </a>
-        <label
-          class="cursor-pointer rounded border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50 has-disabled:cursor-wait has-disabled:opacity-60"
-        >
-          {{ $t(importing ? "transactions.importing" : "transactions.import") }}
-          <input
-            type="file"
-            name="import"
-            accept=".csv,text/csv"
-            class="sr-only"
-            :disabled="importing"
-            @change="importFile"
-          />
-        </label>
+          {{ $t("transactions.statements") }}
+          <span v-if="missingCount" data-count class="rounded-full bg-expense px-2 text-xs text-white">
+            {{ missingCount }}
+          </span>
+        </RouterLink>
+        <DropdownMenu v-else-if="statementWallets.length" name="statements">
+          <template #button>
+            {{ $t("transactions.statements") }}
+            <span
+              v-if="missingCount"
+              data-count
+              class="rounded-full bg-expense px-2 text-xs text-white"
+              :title="$t('transactions.toCheck', missingCount)"
+            >
+              {{ missingCount }}
+            </span>
+          </template>
+          <RouterLink
+            v-for="wallet in statementWallets"
+            :key="wallet.id"
+            :to="{ name: 'wallet-import', params: { id: wallet.id } }"
+            class="flex items-center justify-between gap-2 px-4 py-2 hover:bg-slate-50"
+          >
+            {{ wallet.name }}
+            <span class="text-xs" :class="wallet.missing ? 'text-expense' : 'text-slate-400'">
+              {{ $t("transactions.toCheck", wallet.missing) }}
+            </span>
+          </RouterLink>
+        </DropdownMenu>
+        <DropdownMenu name="csv" :disabled="importing">
+          <template #button>{{ $t(importing ? "transactions.importing" : "transactions.csv") }}</template>
+          <a :href="`/api/transactions/export/${query}`" download class="block px-4 py-2 hover:bg-slate-50">
+            {{ $t("transactions.export") }}
+          </a>
+          <button
+            type="button"
+            name="import-csv"
+            class="block w-full px-4 py-2 text-left hover:bg-slate-50"
+            @click="importInput.click()"
+          >
+            {{ $t("transactions.import") }}
+          </button>
+        </DropdownMenu>
+        <input
+          ref="importInput"
+          type="file"
+          name="import"
+          accept=".csv,text/csv"
+          class="sr-only"
+          :disabled="importing"
+          @change="importFile"
+        />
         <RouterLink
           :to="{ name: 'transfer-new', query: filterQuery }"
           class="rounded border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
@@ -299,6 +349,12 @@ onMounted(() => {
         </li>
       </ul>
     </div>
+    <BankMovements
+      v-if="walletList.length"
+      :wallets="wallets"
+      :query="filterQuery"
+      @loaded="(movements) => (missing = movements)"
+    />
     <p v-if="!transactions && !error && !filterErrors.length" class="mt-6 text-slate-500">
       {{ $t("transactions.loading") }}
     </p>

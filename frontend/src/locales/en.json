@@ -103,8 +103,8 @@
     "delete": "Delete",
     "confirmDelete": "Delete the transaction {description}?",
     "confirmDeleteTransfer": "Delete the transfer {description}? Both its transactions will be deleted.",
-    "export": "Export CSV",
-    "import": "Import CSV",
+    "export": "Export",
+    "import": "Import…",
     "importing": "Importing…",
     "imported": "1 transaction imported. | {n} transactions imported.",
     "importCreated": "New: {wallets} wallets, {categories} categories, {tags} tags.",
@@ -182,14 +182,18 @@
         "invalid": "Check the fields below.",
         "generic": "Unable to save the transaction: try again later."
       },
-      "sharedHint": "Paid from a personal wallet for the whole family: it counts as a contribution to the joint wallets."
+      "sharedHint": "Paid from a personal wallet for the whole family: it counts as a contribution to the joint wallets.",
+      "fromMovement": "This transaction registers the bank movement of {date}."
     },
     "shared": "Shared expense",
     "family": {
       "title": "Family transfers",
       "intro": "What each member still has to transfer to the joint wallets this month, so that everyone contributes in equal measure.",
       "register": "Register transfer"
-    }
+    },
+    "csv": "CSV",
+    "statements": "Bank statements",
+    "toCheck": "Nothing to check | 1 movement to check | {n} movements to check"
   },
   "transfers": {
     "form": {
@@ -324,9 +328,40 @@
         "invalid": "Check the fields below.",
         "generic": "Unable to save the wallet: try again later."
       },
-      "sharedHint": "It receives the family contributions: the transfers to it from the personal wallets count as contributions."
+      "sharedHint": "It receives the family contributions: the transfers to it from the personal wallets count as contributions.",
+      "import": {
+        "title": "Bank statements",
+        "enabled": "Import the bank statements",
+        "hint": "How to read the CSV or xlsx files exported by the bank: the columns are found by their header. The imported movements are not created as transactions, they help find the ones that were not entered.",
+        "date_column": "Date column",
+        "date_format": "Date format",
+        "amount": "Amount",
+        "amountModes": {
+          "signed": "A single column, negative for the expenses",
+          "split": "Separate income and expense columns"
+        },
+        "amount_column": "Amount column",
+        "income_column": "Income column",
+        "expense_column": "Expense column",
+        "description_column": "Description column",
+        "optional": "Optional.",
+        "decimal_separator": "Decimal separator",
+        "separators": {
+          "comma": "Comma (1.234,56)",
+          "dot": "Dot (1,234.56)"
+        },
+        "delimiter": "CSV delimiter",
+        "delimiters": {
+          "semicolon": "Semicolon",
+          "comma": "Comma",
+          "tab": "Tab"
+        },
+        "negate_amounts": "Invert the sign of the amounts",
+        "negateHint": "For the statements that list the expenses as positive amounts, like some credit cards."
+      }
     },
-    "family": "Family"
+    "family": "Family",
+    "import": "Import statement"
   },
   "labels": {
     "loading": "Loading…",
@@ -547,7 +582,8 @@
         "budgets": "budgets",
         "contributions": "family contributions",
         "categories": "categories",
-        "tags": "tags"
+        "tags": "tags",
+        "bank_movements": "bank movements"
       },
       "empty": "There is no data to delete.",
       "confirm": "To confirm, type {word}",
@@ -558,6 +594,38 @@
       "errors": {
         "delete": "Unable to delete the data: try again later."
       }
+    }
+  },
+  "bankImport": {
+    "title": "Import statement",
+    "intro": "Upload a statement exported by the bank (CSV or xlsx): its movements are compared with the transactions of the wallet, by date and amount, and the ones without a transaction are listed below. The movements already imported are skipped.",
+    "import": "Upload statement",
+    "importing": "Importing…",
+    "imported": "No new movements. | 1 new movement. | {n} new movements.",
+    "duplicates": "1 movement was already imported. | {n} movements were already imported.",
+    "importFailed": "The statement was not imported:",
+    "noFormat": "The import format of this wallet is not set.",
+    "setUpFormat": "Set it up",
+    "errors": {
+      "load": "Unable to load the wallet.",
+      "import": "Unable to import the statement: try again later."
+    }
+  },
+  "bankMovements": {
+    "missing": {
+      "title": "Bank movements not entered",
+      "intro": "No transaction matches these movements of the bank statements: register them, or ignore them if they do not need one.",
+      "toggle": "Ignore"
+    },
+    "ignored": {
+      "title": "Ignored bank movements",
+      "intro": "These movements are not reconciled with the transactions.",
+      "toggle": "Restore"
+    },
+    "register": "Register",
+    "noDescription": "No description",
+    "errors": {
+      "update": "Unable to update the bank movement: try again later."
     }
   }
 }

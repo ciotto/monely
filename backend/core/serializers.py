@@ -7,7 +7,20 @@ from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from core.models import Budget, Category, Contribution, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
+from core.models import (
+    BankMovement,
+    Budget,
+    Category,
+    Contribution,
+    ImportFormat,
+    RecurringTransaction,
+    Tag,
+    Transaction,
+    Transfer,
+    User,
+    Wallet,
+)
+from core.reconciliation import reconcile
 
 # The transactions of a transfer change only through the transfer, which keeps them consistent
 TRANSFER_LEG_ERROR = _("This transaction belongs to a transfer: edit the transfer instead.")
@@ -36,9 +49,34 @@ class OwnerSerializer(serializers.ModelSerializer):
         fields = ("id", "email", "first_name", "last_name")
 
 
+class ImportFormatSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ImportFormat
+        fields = (
+            "date_column",
+            "date_format",
+            "amount_column",
+            "income_column",
+            "expense_column",
+            "description_column",
+            "decimal_separator",
+            "delimiter",
+            "negate_amounts",
+        )
+
+    def validate(self, attrs):
+        if not attrs.get("amount_column") and not (attrs.get("income_column") and attrs.get("expense_column")):
+            raise serializers.ValidationError(
+                {"amount_column": _("Set the amount column, or both the income and the expense columns.")}
+            )
+        return attrs
+
+
 class WalletSerializer(serializers.ModelSerializer):
     # A personal wallet has a single owner, a joint one belongs to the whole family and has none
     owners = serializers.PrimaryKeyRelatedField(many=True, required=False, queryset=User.objects.all())
+    # How to read the bank statements of the wallet; null when they are not imported
+    import_format = ImportFormatSerializer(required=False, allow_null=True)
 
     class Meta:
         model = Wallet
@@ -49,6 +87,7 @@ class WalletSerializer(serializers.ModelSerializer):
             "owners",
             "is_archived",
             "is_shared",
+            "import_format",
             "created_at",
         )
         read_only_fields = ("created_at",)
@@ -70,6 +109,37 @@ class WalletSerializer(serializers.ModelSerializer):
         if len(owners) != 1:
             raise serializers.ValidationError({"owners": _("A personal wallet has exactly one owner.")})
         return attrs
+
+    def validate_import_format(self, value):
+        # The format is replaced as a whole, also by a partial update, which would otherwise skip its missing fields
+        if value is not None and self.partial:
+            serializer = ImportFormatSerializer(data=self.initial_data["import_format"])
+            serializer.is_valid(raise_exception=True)
+            value = serializer.validated_data
+        return value
+
+    def create(self, validated_data):
+        import_format = validated_data.pop("import_format", None)
+        with transaction.atomic():
+            instance = super().create(validated_data)
+            self.save_import_format(instance, import_format)
+        return instance
+
+    def update(self, instance, validated_data):
+        with transaction.atomic():
+            if "import_format" in validated_data:
+                self.save_import_format(instance, validated_data.pop("import_format"))
+            instance = super().update(instance, validated_data)
+        return instance
+
+    @staticmethod
+    def save_import_format(instance, data):
+        if data is None:
+            ImportFormat.objects.filter(wallet=instance).delete()
+            # Clears the cached format, if any
+            instance.import_format = None
+        else:
+            instance.import_format, _created = ImportFormat.objects.update_or_create(wallet=instance, defaults=data)
 
 
 class LabelSerializer(serializers.ModelSerializer):
@@ -350,6 +420,35 @@ class TransactionFilterSerializer(serializers.Serializer):
 
 class TransactionImportSerializer(serializers.Serializer):
     file = serializers.FileField()
+
+
+class BankMovementSerializer(serializers.ModelSerializer):
+    """A movement of a bank statement: only the ignored flag can be changed."""
+
+    # The transaction that reconciles it, or null
+    transaction = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BankMovement
+        fields = ("id", "wallet", "date", "amount", "description", "is_ignored", "transaction", "created_at")
+        read_only_fields = ("wallet", "date", "amount", "description", "created_at")
+
+    def get_transaction(self, instance):
+        # A list passes the reconciliation of all its wallets
+        matches = self.context.get("matches")
+        if matches is None:
+            matches = reconcile([instance.wallet_id])
+        return matches.get(instance.pk)
+
+
+class BankMovementFilterSerializer(serializers.Serializer):
+    """
+    The query parameters of the bank movements: the missing ones are neither reconciled nor ignored, and their wallets
+    are not archived, as they do not receive new transactions.
+    """
+
+    wallet = serializers.PrimaryKeyRelatedField(required=False, queryset=Wallet.objects.all())
+    status = serializers.ChoiceField(required=False, choices=["missing", "reconciled", "ignored"])
 
 
 class MonthFilterSerializer(serializers.Serializer):

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 
 import { authGuard } from "@/auth";
+import BankImportView from "@/views/BankImportView.vue";
 import BudgetsView from "@/views/BudgetsView.vue";
 import DashboardView from "@/views/DashboardView.vue";
 import FamilyView from "@/views/FamilyView.vue";
@@ -35,6 +36,7 @@ const routes = [
   { path: "/wallets", name: "wallets", component: WalletsView, meta: { settings: true } },
   { path: "/wallets/new", name: "wallet-new", component: WalletFormView, meta: { settings: true } },
   { path: "/wallets/:id(\\d+)", name: "wallet-edit", component: WalletFormView, meta: { settings: true } },
+  { path: "/wallets/:id(\\d+)/import", name: "wallet-import", component: BankImportView, meta: { settings: true } },
   {
     path: "/categories",
     name: "categories",

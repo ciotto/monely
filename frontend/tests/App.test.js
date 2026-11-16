@@ -509,6 +509,26 @@ describe("App", () => {
       expect(rows(wrapper)[1]).toEqual(["Old card", "USD", "luca@example.com", "Archived", "EditRestore"]);
     });
 
+    it("links the import of the statements of the active wallets with an import format", async () => {
+      const importFormat = { date_column: "Data", amount_column: "Importo" };
+      mockFetch({
+        "GET /api/auth/me/": [200, USER],
+        "GET /api/wallets/": [
+          200,
+          [
+            { ...WALLETS[0], import_format: importFormat },
+            { ...WALLETS[1], import_format: importFormat },
+            { ...WALLETS[2], import_format: null },
+          ],
+        ],
+        "GET /api/wallets/owners/": [200, OWNERS],
+      });
+      const { wrapper } = await mountAt("/wallets");
+      await wrapper.find("input[name=show_archived]").setChecked(true);
+      expect(rows(wrapper).map((row) => row[4])).toEqual(["Import statementEditArchive", "EditRestore", "EditArchive"]);
+      expect(wrapper.find("a[href='/wallets/1/import']").exists()).toBe(true);
+    });
+
     it("shows a message when there are no wallets", async () => {
       mockFetch({
         "GET /api/auth/me/": [200, USER],
@@ -619,6 +639,7 @@ describe("App", () => {
         owners: [2],
         is_archived: false,
         is_shared: false,
+        import_format: null,
       });
       expect(router.currentRoute.value.name).toBe("wallets");
     });
@@ -678,6 +699,7 @@ describe("App", () => {
         owners: [2],
         is_archived: true,
         is_shared: false,
+        import_format: null,
       });
       expect(router.currentRoute.value.name).toBe("wallets");
     });
@@ -699,6 +721,140 @@ describe("App", () => {
       await submit(wrapper);
       const [, { body }] = fetch.mock.calls.at(-3);
       expect(JSON.parse(body)).toMatchObject({ owners: [1], is_shared: false });
+    });
+
+    it("creates a wallet with the import format of its statements", async () => {
+      const fetch = mockFetch({
+        "GET /api/auth/me/": [200, USER],
+        "GET /api/wallets/owners/": [200, OWNERS],
+        "POST /api/wallets/": [201, {}],
+        "GET /api/wallets/": [200, []],
+      });
+      const { wrapper } = await mountAt("/wallets/new");
+      expect(wrapper.find("input[name=date_column]").exists()).toBe(false);
+
+      await wrapper.find("input[name=import_enabled]").setChecked(true);
+      expect(wrapper.find("input[name=amount_mode][value=signed]").element.checked).toBe(true);
+      expect(wrapper.find("input[name=income_column]").exists()).toBe(false);
+      expect(wrapper.findAll("select[name=date_format] option").map((option) => option.text())).toEqual([
+        "31/12/2026",
+        "31/12/26",
+        "31-12-2026",
+        "31.12.2026",
+        "2026-12-31",
+        "12/31/2026",
+      ]);
+      expect(wrapper.findAll("select[name=delimiter] option").map((option) => option.text())).toEqual([
+        "Semicolon",
+        "Comma",
+        "Tab",
+      ]);
+      await fill(wrapper, {
+        name: "Bank",
+        date_column: "Data contabile",
+        amount_column: "Importo",
+        description_column: "Descrizione",
+      });
+      await wrapper.find("select[name=date_format]").setValue("%Y-%m-%d");
+      await wrapper.find("select[name=decimal_separator]").setValue(".");
+      await wrapper.find("select[name=delimiter]").setValue("\t");
+      await wrapper.find("input[name=negate_amounts]").setChecked(true);
+      await submit(wrapper);
+      const [url, { method, body }] = fetch.mock.calls.at(-3);
+      expect([url, method]).toEqual(["/api/wallets/", "POST"]);
+      expect(JSON.parse(body).import_format).toEqual({
+        date_column: "Data contabile",
+        date_format: "%Y-%m-%d",
+        amount_column: "Importo",
+        income_column: "",
+        expense_column: "",
+        description_column: "Descrizione",
+        decimal_separator: ".",
+        delimiter: "\t",
+        negate_amounts: true,
+      });
+    });
+
+    it("edits the import format with income and expense columns", async () => {
+      const importFormat = {
+        date_column: "Data",
+        date_format: "%d/%m/%Y",
+        amount_column: "",
+        income_column: "Entrate",
+        expense_column: "Uscite",
+        description_column: "Descrizione",
+        decimal_separator: ",",
+        delimiter: ";",
+        negate_amounts: false,
+      };
+      const wallet = { id: 3, name: "Bank", currency: "EUR", owners: [1], is_archived: false, is_shared: false };
+      const fetch = mockFetch({
+        "GET /api/auth/me/": [200, USER],
+        "GET /api/wallets/owners/": [200, OWNERS],
+        "GET /api/wallets/3/": [200, { ...wallet, import_format: importFormat }],
+        "PATCH /api/wallets/3/": [
+          400,
+          {
+            import_format: {
+              date_column: ["This field may not be blank."],
+              amount_column: ["Set the amount column, or both the income and the expense columns."],
+            },
+          },
+        ],
+      });
+      const { wrapper } = await mountAt("/wallets/3");
+      expect(wrapper.find("input[name=import_enabled]").element.checked).toBe(true);
+      expect(wrapper.find("input[name=amount_mode][value=split]").element.checked).toBe(true);
+      expect(wrapper.find("input[name=amount_column]").exists()).toBe(false);
+      expect(wrapper.find("input[name=income_column]").element.value).toBe("Entrate");
+      expect(wrapper.find("input[name=description_column]").element.value).toBe("Descrizione");
+
+      await fill(wrapper, { expense_column: "Addebiti" });
+      await submit(wrapper);
+      const [, { body }] = fetch.mock.calls.findLast(([, { method }]) => method === "PATCH");
+      expect(JSON.parse(body).import_format).toEqual({ ...importFormat, expense_column: "Addebiti" });
+      expect(wrapper.find("input[name=date_column]").element.closest("label").textContent).toContain(
+        "This field may not be blank.",
+      );
+      expect(wrapper.find("input[name=income_column]").element.closest("div").textContent).toContain(
+        "Set the amount column",
+      );
+
+      // A single column drops the other ones
+      await wrapper.find("input[name=amount_mode][value=signed]").setChecked(true);
+      await fill(wrapper, { amount_column: "Importo" });
+      await submit(wrapper);
+      expect(wrapper.find("input[name=amount_column]").element.closest("label").textContent).toContain(
+        "Set the amount column",
+      );
+      const [, { body: signed }] = fetch.mock.calls.findLast(([, { method }]) => method === "PATCH");
+      expect(JSON.parse(signed).import_format).toMatchObject({
+        amount_column: "Importo",
+        income_column: "",
+        expense_column: "",
+      });
+
+      // Without the import, the format is removed
+      await wrapper.find("input[name=import_enabled]").setChecked(false);
+      await submit(wrapper);
+      const [, { body: disabled }] = fetch.mock.calls.findLast(([, { method }]) => method === "PATCH");
+      expect(JSON.parse(disabled).import_format).toBeNull();
+    });
+
+    it("loads an import format with a single amount column", async () => {
+      const wallet = { id: 3, name: "Bank", currency: "EUR", owners: [1], is_archived: false, is_shared: false };
+      mockFetch({
+        "GET /api/auth/me/": [200, USER],
+        "GET /api/wallets/owners/": [200, OWNERS],
+        "GET /api/wallets/3/": [
+          200,
+          { ...wallet, import_format: { date_column: "Data", amount_column: "Importo", delimiter: "\t" } },
+        ],
+      });
+      const { wrapper } = await mountAt("/wallets/3");
+      expect(wrapper.find("input[name=amount_mode][value=signed]").element.checked).toBe(true);
+      expect(wrapper.find("input[name=amount_column]").element.value).toBe("Importo");
+      expect(wrapper.find("select[name=delimiter]").element.value).toBe("\t");
     });
 
     it("shows the field errors returned by the backend", async () => {

@@ -28,14 +28,29 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from core.bank_statements import StatementImporter
 from core.budgets import build_budgets
 from core.dashboard import build_dashboard
 from core.family import build_family_balance
-from core.models import Budget, Category, Contribution, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
+from core.models import (
+    BankMovement,
+    Budget,
+    Category,
+    Contribution,
+    RecurringTransaction,
+    Tag,
+    Transaction,
+    Transfer,
+    User,
+    Wallet,
+)
+from core.reconciliation import reconcile
 from core.serializers import (
     RECURRING_ENDED_ERROR,
     TRANSFER_LEG_ERROR,
     AdminUserSerializer,
+    BankMovementFilterSerializer,
+    BankMovementSerializer,
     BudgetSerializer,
     CategorySerializer,
     ContributionSerializer,
@@ -135,14 +150,59 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
 
 
 class WalletListView(ListCreateAPIView):
-    queryset = Wallet.objects.prefetch_related("owners")
+    queryset = Wallet.objects.select_related("import_format").prefetch_related("owners")
     serializer_class = WalletSerializer
 
 
 # Wallets are archived instead of deleted
 class WalletDetailView(RetrieveUpdateAPIView):
-    queryset = Wallet.objects.prefetch_related("owners")
+    queryset = Wallet.objects.select_related("import_format").prefetch_related("owners")
     serializer_class = WalletSerializer
+
+
+class StatementImportView(GenericAPIView):
+    """Uploads a bank statement of the wallet, read with its import format: the movements are not transactions."""
+
+    queryset = Wallet.objects.select_related("import_format")
+    parser_classes = [MultiPartParser]
+
+    def post(self, request, pk):
+        wallet = self.get_object()
+        serializer = TransactionImportSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        # Archived wallets do not receive new transactions, so there is nothing to reconcile
+        if wallet.is_archived:
+            raise serializers.ValidationError({"wallet": [_("This wallet is archived.")]})
+        if not hasattr(wallet, "import_format"):
+            raise serializers.ValidationError({"wallet": [_("This wallet has no import format: set it up first.")]})
+        imported = StatementImporter(wallet).run(serializer.validated_data["file"])
+        return Response(imported, status=status.HTTP_201_CREATED)
+
+
+class BankMovementListView(APIView):
+    """The imported bank movements, each with the transaction that reconciles it."""
+
+    def get(self, request):
+        filters = BankMovementFilterSerializer(data=request.query_params)
+        filters.is_valid(raise_exception=True)
+        data = filters.validated_data
+        queryset = BankMovement.objects.all()
+        if "wallet" in data:
+            queryset = queryset.filter(wallet=data["wallet"])
+        matches = reconcile(queryset.values("wallet"))
+        if data.get("status") == "missing":
+            queryset = queryset.filter(is_ignored=False, wallet__is_archived=False).exclude(pk__in=list(matches))
+        elif data.get("status") == "reconciled":
+            queryset = queryset.filter(pk__in=list(matches))
+        elif data.get("status") == "ignored":
+            queryset = queryset.filter(is_ignored=True)
+        return Response(BankMovementSerializer(queryset, many=True, context={"matches": matches}).data)
+
+
+# Movements are never deleted, or the next import would add them again: they are ignored instead
+class BankMovementDetailView(RetrieveUpdateAPIView):
+    queryset = BankMovement.objects.all()
+    serializer_class = BankMovementSerializer
 
 
 class WalletOwnerListView(ListAPIView):
@@ -364,6 +424,7 @@ class MaintenanceDataView(APIView):
         "transactions": Transaction,
         "transfers": Transfer,
         "recurring_transactions": RecurringTransaction,
+        "bank_movements": BankMovement,
         "wallets": Wallet,
         "budgets": Budget,
         "contributions": Contribution,

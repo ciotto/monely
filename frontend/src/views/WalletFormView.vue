@@ -18,6 +18,31 @@ const form = reactive({
   is_shared: false,
   is_archived: false,
 });
+// How to read the bank statements: the columns are found by their header, the amount is either a signed column or the
+// difference between an income and an expense column
+const importEnabled = ref(false);
+const importFormat = reactive({
+  date_column: "",
+  date_format: "%d/%m/%Y",
+  amount_column: "",
+  income_column: "",
+  expense_column: "",
+  description_column: "",
+  decimal_separator: ",",
+  delimiter: ";",
+  negate_amounts: false,
+});
+const amountMode = ref("signed");
+// The formats show an example date, the same in every language
+const DATE_FORMATS = {
+  "%d/%m/%Y": "31/12/2026",
+  "%d/%m/%y": "31/12/26",
+  "%d-%m-%Y": "31-12-2026",
+  "%d.%m.%Y": "31.12.2026",
+  "%Y-%m-%d": "2026-12-31",
+  "%m/%d/%Y": "12/31/2026",
+};
+const DELIMITERS = { ";": "semicolon", ",": "comma", "\t": "tab" };
 const owners = ref([]);
 const loaded = ref(false);
 // Messages coming from the backend are already translated, the others are i18n keys
@@ -43,6 +68,11 @@ onMounted(async () => {
       }
       // A joint wallet has no owner: the current user is proposed if it becomes personal
       form.owner = wallet.owners[0] ?? auth.user.id;
+      if (wallet.import_format) {
+        importEnabled.value = true;
+        Object.assign(importFormat, wallet.import_format);
+        amountMode.value = wallet.import_format.amount_column ? "signed" : "split";
+      }
     }
     loaded.value = true;
   } catch {
@@ -56,6 +86,9 @@ async function submit() {
   submitting.value = true;
   const { currency, owner, ...data } = form;
   data.owners = data.is_shared ? [] : [owner];
+  // Only the columns of the chosen kind of amount are kept
+  const columns = amountMode.value === "signed" ? { income_column: "", expense_column: "" } : { amount_column: "" };
+  data.import_format = importEnabled.value ? { ...importFormat, ...columns } : null;
   try {
     // The currency cannot be changed once the wallet exists
     if (walletId !== null) {
@@ -134,6 +167,140 @@ async function submit() {
         <span v-for="message in fieldErrors.owners" :key="message" class="mt-1 block text-sm text-expense">
           {{ message }}
         </span>
+      </fieldset>
+      <fieldset class="space-y-4 border-t border-slate-200 pt-4">
+        <legend class="sr-only">{{ $t("wallets.form.import.title") }}</legend>
+        <label class="block">
+          <span class="flex items-center gap-2">
+            <input v-model="importEnabled" type="checkbox" name="import_enabled" class="accent-brand" />
+            <span class="text-sm font-medium">{{ $t("wallets.form.import.enabled") }}</span>
+          </span>
+          <span class="mt-1 block text-sm text-slate-500">{{ $t("wallets.form.import.hint") }}</span>
+        </label>
+        <template v-if="importEnabled">
+          <div class="grid grid-cols-2 gap-4">
+            <label class="block">
+              <span class="text-sm font-medium">{{ $t("wallets.form.import.date_column") }}</span>
+              <input
+                v-model="importFormat.date_column"
+                type="text"
+                name="date_column"
+                autocomplete="off"
+                maxlength="100"
+                required
+                class="mt-1 block w-full rounded border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none"
+              />
+              <span
+                v-for="message in fieldErrors.import_format?.date_column"
+                :key="message"
+                class="mt-1 block text-sm text-expense"
+              >
+                {{ message }}
+              </span>
+            </label>
+            <label class="block">
+              <span class="text-sm font-medium">{{ $t("wallets.form.import.date_format") }}</span>
+              <select
+                v-model="importFormat.date_format"
+                name="date_format"
+                class="mt-1 block w-full rounded border border-slate-300 bg-white px-3 py-2 focus:border-brand focus:outline-none"
+              >
+                <option v-for="(example, value) in DATE_FORMATS" :key="value" :value="value">{{ example }}</option>
+              </select>
+            </label>
+          </div>
+          <fieldset>
+            <legend class="text-sm font-medium">{{ $t("wallets.form.import.amount") }}</legend>
+            <label v-for="mode in ['signed', 'split']" :key="mode" class="mt-1 flex items-center gap-2 text-sm">
+              <input v-model="amountMode" type="radio" name="amount_mode" :value="mode" class="accent-brand" />
+              {{ $t(`wallets.form.import.amountModes.${mode}`) }}
+            </label>
+          </fieldset>
+          <label v-if="amountMode === 'signed'" class="block">
+            <span class="text-sm font-medium">{{ $t("wallets.form.import.amount_column") }}</span>
+            <input
+              v-model="importFormat.amount_column"
+              type="text"
+              name="amount_column"
+              autocomplete="off"
+              maxlength="100"
+              required
+              class="mt-1 block w-full rounded border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none"
+            />
+            <span
+              v-for="message in fieldErrors.import_format?.amount_column"
+              :key="message"
+              class="mt-1 block text-sm text-expense"
+            >
+              {{ message }}
+            </span>
+          </label>
+          <div v-else class="grid grid-cols-2 gap-4">
+            <label v-for="column in ['income_column', 'expense_column']" :key="column" class="block">
+              <span class="text-sm font-medium">{{ $t(`wallets.form.import.${column}`) }}</span>
+              <input
+                v-model="importFormat[column]"
+                type="text"
+                :name="column"
+                autocomplete="off"
+                maxlength="100"
+                required
+                class="mt-1 block w-full rounded border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none"
+              />
+            </label>
+            <span
+              v-for="message in fieldErrors.import_format?.amount_column"
+              :key="message"
+              class="col-span-2 block text-sm text-expense"
+            >
+              {{ message }}
+            </span>
+          </div>
+          <label class="block">
+            <span class="text-sm font-medium">{{ $t("wallets.form.import.description_column") }}</span>
+            <input
+              v-model="importFormat.description_column"
+              type="text"
+              name="description_column"
+              autocomplete="off"
+              maxlength="100"
+              class="mt-1 block w-full rounded border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none"
+            />
+            <span class="mt-1 block text-sm text-slate-500">{{ $t("wallets.form.import.optional") }}</span>
+          </label>
+          <div class="grid grid-cols-2 gap-4">
+            <label class="block">
+              <span class="text-sm font-medium">{{ $t("wallets.form.import.decimal_separator") }}</span>
+              <select
+                v-model="importFormat.decimal_separator"
+                name="decimal_separator"
+                class="mt-1 block w-full rounded border border-slate-300 bg-white px-3 py-2 focus:border-brand focus:outline-none"
+              >
+                <option value=",">{{ $t("wallets.form.import.separators.comma") }}</option>
+                <option value=".">{{ $t("wallets.form.import.separators.dot") }}</option>
+              </select>
+            </label>
+            <label class="block">
+              <span class="text-sm font-medium">{{ $t("wallets.form.import.delimiter") }}</span>
+              <select
+                v-model="importFormat.delimiter"
+                name="delimiter"
+                class="mt-1 block w-full rounded border border-slate-300 bg-white px-3 py-2 focus:border-brand focus:outline-none"
+              >
+                <option v-for="(name, value) in DELIMITERS" :key="name" :value="value">
+                  {{ $t(`wallets.form.import.delimiters.${name}`) }}
+                </option>
+              </select>
+            </label>
+          </div>
+          <label class="block">
+            <span class="flex items-center gap-2">
+              <input v-model="importFormat.negate_amounts" type="checkbox" name="negate_amounts" class="accent-brand" />
+              <span class="text-sm font-medium">{{ $t("wallets.form.import.negate_amounts") }}</span>
+            </span>
+            <span class="mt-1 block text-sm text-slate-500">{{ $t("wallets.form.import.negateHint") }}</span>
+          </label>
+        </template>
       </fieldset>
       <label v-if="walletId !== null" class="flex items-center gap-2">
         <input v-model="form.is_archived" type="checkbox" name="is_archived" class="accent-brand" />

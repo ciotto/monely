@@ -95,6 +95,13 @@ onMounted(async () => {
               </td>
               <td class="px-4 py-2 text-right whitespace-nowrap">
                 <RouterLink
+                  v-if="wallet.import_format && !wallet.is_archived"
+                  :to="{ name: 'wallet-import', params: { id: wallet.id } }"
+                  class="mr-3 text-brand hover:text-brand-dark"
+                >
+                  {{ $t("wallets.import") }}
+                </RouterLink>
+                <RouterLink
                   :to="{ name: 'wallet-edit', params: { id: wallet.id } }"
                   class="text-brand hover:text-brand-dark"
                 >

@@ -1,6 +1,8 @@
 from django.urls import path
 
 from core.views import (
+    BankMovementDetailView,
+    BankMovementListView,
     BudgetDetailView,
     BudgetListView,
     BudgetSummaryView,
@@ -19,6 +21,7 @@ from core.views import (
     RecurringTransactionListView,
     RecurringTransactionSkipView,
     SetupView,
+    StatementImportView,
     TagDetailView,
     TagListView,
     TransactionDetailView,
@@ -46,6 +49,9 @@ urlpatterns = [
     path("wallets/", WalletListView.as_view(), name="wallets"),
     path("wallets/owners/", WalletOwnerListView.as_view(), name="wallet-owners"),
     path("wallets/<int:pk>/", WalletDetailView.as_view(), name="wallet"),
+    path("wallets/<int:pk>/import/", StatementImportView.as_view(), name="wallet-import"),
+    path("bank-movements/", BankMovementListView.as_view(), name="bank-movements"),
+    path("bank-movements/<int:pk>/", BankMovementDetailView.as_view(), name="bank-movement"),
     path("categories/", CategoryListView.as_view(), name="categories"),
     path("categories/<int:pk>/", CategoryDetailView.as_view(), name="category"),
     path("budgets/", BudgetListView.as_view(), name="budgets"),

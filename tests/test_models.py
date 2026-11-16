@@ -5,7 +5,18 @@ import pytest
 from django.db import IntegrityError
 from django.db.models import ProtectedError
 
-from core.models import Budget, Category, Contribution, RecurringTransaction, Tag, Transaction, User, Wallet
+from core.models import (
+    BankMovement,
+    Budget,
+    Category,
+    Contribution,
+    ImportFormat,
+    RecurringTransaction,
+    Tag,
+    Transaction,
+    User,
+    Wallet,
+)
 
 
 @pytest.mark.django_db
@@ -43,6 +54,27 @@ class TestWallet:
         assert wallet.currency == "EUR"
         assert not wallet.is_archived
         assert str(wallet) == "Cash"
+
+
+@pytest.mark.django_db
+class TestBankImport:
+    def test_import_format(self):
+        import_format = ImportFormat.objects.create(
+            wallet=Wallet.objects.create(name="Bank"), date_column="Date", amount_column="Amount"
+        )
+
+        assert import_format.date_format == "%d/%m/%Y"
+        assert import_format.decimal_separator == ","
+        assert import_format.delimiter == ";"
+        assert str(import_format) == "Bank"
+
+    def test_bank_movement(self):
+        movement = BankMovement.objects.create(
+            wallet=Wallet.objects.create(name="Bank"), date=datetime.date(2026, 11, 2), amount=Decimal("-45.30")
+        )
+
+        assert not movement.is_ignored
+        assert str(movement) == "2026-11-02  -45.30"
 
 
 @pytest.mark.django_db

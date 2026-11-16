@@ -103,8 +103,8 @@
     "delete": "Elimina",
     "confirmDelete": "Eliminare il movimento {description}?",
     "confirmDeleteTransfer": "Eliminare il trasferimento {description}? Verranno eliminati entrambi i suoi movimenti.",
-    "export": "Esporta CSV",
-    "import": "Importa CSV",
+    "export": "Esporta",
+    "import": "Importa…",
     "importing": "Importazione…",
     "imported": "1 movimento importato. | {n} movimenti importati.",
     "importCreated": "Nuovi: {wallets} portafogli, {categories} categorie, {tags} tag.",
@@ -182,14 +182,18 @@
         "invalid": "Controlla i campi qui sotto.",
         "generic": "Impossibile salvare il movimento: riprova più tardi."
       },
-      "sharedHint": "Pagata da un portafoglio personale per tutta la famiglia: conta come contributo ai portafogli comuni."
+      "sharedHint": "Pagata da un portafoglio personale per tutta la famiglia: conta come contributo ai portafogli comuni.",
+      "fromMovement": "Questo movimento registra il movimento della banca del {date}."
     },
     "shared": "Spesa comune",
     "family": {
       "title": "Trasferimenti familiari",
       "intro": "Quanto ogni membro deve ancora trasferire ai portafogli comuni questo mese, perché tutti contribuiscano in egual misura.",
       "register": "Registra trasferimento"
-    }
+    },
+    "csv": "CSV",
+    "statements": "Estratti conto",
+    "toCheck": "Niente da controllare | 1 movimento della banca da controllare | {n} movimenti della banca da controllare"
   },
   "transfers": {
     "form": {
@@ -324,9 +328,40 @@
         "invalid": "Controlla i campi qui sotto.",
         "generic": "Impossibile salvare il portafoglio: riprova più tardi."
       },
-      "sharedHint": "Riceve i contributi della famiglia: i trasferimenti dai portafogli personali verso di esso contano come contributi."
+      "sharedHint": "Riceve i contributi della famiglia: i trasferimenti dai portafogli personali verso di esso contano come contributi.",
+      "import": {
+        "title": "Estratti conto",
+        "enabled": "Importa gli estratti conto della banca",
+        "hint": "Come leggere i file CSV o xlsx esportati dalla banca: le colonne sono cercate per intestazione. I movimenti della banca non vengono registrati, servono a trovare quelli mancanti.",
+        "date_column": "Colonna della data",
+        "date_format": "Formato della data",
+        "amount": "Importo",
+        "amountModes": {
+          "signed": "Una sola colonna, negativa per le uscite",
+          "split": "Colonne separate per entrate e uscite"
+        },
+        "amount_column": "Colonna dell'importo",
+        "income_column": "Colonna delle entrate",
+        "expense_column": "Colonna delle uscite",
+        "description_column": "Colonna della descrizione",
+        "optional": "Facoltativa.",
+        "decimal_separator": "Separatore decimale",
+        "separators": {
+          "comma": "Virgola (1.234,56)",
+          "dot": "Punto (1,234.56)"
+        },
+        "delimiter": "Separatore CSV",
+        "delimiters": {
+          "semicolon": "Punto e virgola",
+          "comma": "Virgola",
+          "tab": "Tabulazione"
+        },
+        "negate_amounts": "Inverti il segno degli importi",
+        "negateHint": "Per gli estratti conto che riportano le uscite come importi positivi, come alcune carte di credito."
+      }
     },
-    "family": "Famiglia"
+    "family": "Famiglia",
+    "import": "Importa estratto conto"
   },
   "labels": {
     "loading": "Caricamento…",
@@ -547,7 +582,8 @@
         "budgets": "budget",
         "contributions": "contributi familiari",
         "categories": "categorie",
-        "tags": "tag"
+        "tags": "tag",
+        "bank_movements": "movimenti della banca"
       },
       "empty": "Non ci sono dati da eliminare.",
       "confirm": "Per confermare, scrivi {word}",
@@ -558,6 +594,38 @@
       "errors": {
         "delete": "Impossibile eliminare i dati: riprova più tardi."
       }
+    }
+  },
+  "bankImport": {
+    "title": "Importa estratto conto",
+    "intro": "Carica un estratto conto esportato dalla banca (CSV o xlsx): i suoi movimenti sono confrontati con quelli del portafoglio, per data e importo, e quelli senza corrispondenza sono elencati qui sotto. I movimenti già importati vengono saltati.",
+    "import": "Carica estratto conto",
+    "importing": "Importazione…",
+    "imported": "Nessun movimento nuovo. | 1 movimento nuovo. | {n} movimenti nuovi.",
+    "duplicates": "1 movimento era già stato importato. | {n} movimenti erano già stati importati.",
+    "importFailed": "L'estratto conto non è stato importato:",
+    "noFormat": "Il formato di importazione di questo portafoglio non è impostato.",
+    "setUpFormat": "Impostalo",
+    "errors": {
+      "load": "Impossibile caricare il portafoglio.",
+      "import": "Impossibile importare l'estratto conto: riprova più tardi."
+    }
+  },
+  "bankMovements": {
+    "missing": {
+      "title": "Movimenti della banca non registrati",
+      "intro": "Nessun movimento corrisponde a questi movimenti degli estratti conto: registrali, oppure ignorali se non servono.",
+      "toggle": "Ignora"
+    },
+    "ignored": {
+      "title": "Movimenti della banca ignorati",
+      "intro": "Questi movimenti della banca non vengono riconciliati.",
+      "toggle": "Ripristina"
+    },
+    "register": "Registra",
+    "noDescription": "Senza descrizione",
+    "errors": {
+      "update": "Impossibile aggiornare il movimento della banca: riprova più tardi."
     }
   }
 }

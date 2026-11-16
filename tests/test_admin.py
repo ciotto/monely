@@ -3,7 +3,7 @@ import datetime
 import pytest
 from django.urls import reverse
 
-from core.models import Budget, Category, RecurringTransaction, Transaction, Transfer, User, Wallet
+from core.models import BankMovement, Budget, Category, RecurringTransaction, Transaction, Transfer, User, Wallet
 
 
 @pytest.mark.django_db
@@ -31,6 +31,25 @@ class TestUserAdmin:
 
         assert response.status_code == 302
         assert User.objects.get(email="new@example.com").check_password("Zx9!long-pass")
+
+    def test_bank_movement_changelist(self, admin_client):
+        BankMovement.objects.create(
+            wallet=Wallet.objects.create(name="Bank"), date=datetime.date(2026, 11, 2), amount=-45, description="Coop"
+        )
+
+        response = admin_client.get(reverse("admin:core_bankmovement_changelist"))
+
+        assert response.status_code == 200
+        assert "Coop" in response.content.decode()
+
+    def test_wallet_change(self, admin_client):
+        wallet = Wallet.objects.create(name="Bank")
+
+        response = admin_client.get(reverse("admin:core_wallet_change", args=[wallet.pk]))
+
+        assert response.status_code == 200
+        # The import format is edited with the wallet
+        assert "import_format-TOTAL_FORMS" in response.content.decode()
 
     def test_wallet_changelist(self, admin_client):
         response = admin_client.get(reverse("admin:core_wallet_changelist"))

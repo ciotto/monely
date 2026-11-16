@@ -1,7 +1,19 @@
 import pytest
 from django.urls import reverse
 
-from core.models import User, Wallet
+from core.models import ImportFormat, User, Wallet
+
+IMPORT_FORMAT = {
+    "date_column": "Data contabile",
+    "date_format": "%d/%m/%Y",
+    "amount_column": "Importo",
+    "income_column": "",
+    "expense_column": "",
+    "description_column": "Descrizione",
+    "decimal_separator": ",",
+    "delimiter": ";",
+    "negate_amounts": False,
+}
 
 
 @pytest.fixture
@@ -39,6 +51,7 @@ class TestWalletListView:
             "owners": [user.pk],
             "is_archived": False,
             "is_shared": False,
+            "import_format": None,
             "created_at": wallet.created_at.isoformat().replace("+00:00", "Z"),
         }
 
@@ -118,6 +131,46 @@ class TestWalletCreate:
         assert set(response.json()) == {"currency"}
         assert not Wallet.objects.exists()
 
+    def test_create_with_import_format(self, user_client, user):
+        response = user_client.post(
+            self.url, {"name": "Bank", "owners": [user.pk], "import_format": IMPORT_FORMAT}, format="json"
+        )
+
+        assert response.status_code == 201
+        assert response.json()["import_format"] == IMPORT_FORMAT
+        assert Wallet.objects.get().import_format.date_column == "Data contabile"
+
+    @pytest.mark.parametrize(
+        "columns",
+        [
+            {"amount_column": ""},
+            {"amount_column": "", "income_column": "Entrate"},
+            {"amount_column": "", "expense_column": "Uscite"},
+        ],
+    )
+    def test_create_import_format_without_amount(self, user_client, user, columns):
+        response = user_client.post(
+            self.url,
+            {"name": "Bank", "owners": [user.pk], "import_format": {**IMPORT_FORMAT, **columns}},
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {
+            "import_format": {"amount_column": ["Set the amount column, or both the income and the expense columns."]}
+        }
+        assert not Wallet.objects.exists()
+
+    def test_create_import_format_with_income_and_expense(self, user_client, user):
+        import_format = {**IMPORT_FORMAT, "amount_column": "", "income_column": "Entrate", "expense_column": "Uscite"}
+
+        response = user_client.post(
+            self.url, {"name": "Bank", "owners": [user.pk], "import_format": import_format}, format="json"
+        )
+
+        assert response.status_code == 201
+        assert response.json()["import_format"] == import_format
+
     def test_create_without_csrf_token(self, api_client, user):
         api_client.force_login(user)
 
@@ -185,6 +238,49 @@ class TestWalletDetail:
         response = user_client.patch(self.url(joint), {"is_shared": False, "owners": [user.pk]}, format="json")
         assert response.status_code == 200
         assert list(joint.owners.all()) == [user]
+
+    def test_set_import_format(self, user_client, wallet):
+        response = user_client.patch(self.url(wallet), {"import_format": IMPORT_FORMAT}, format="json")
+
+        assert response.status_code == 200
+        assert response.json()["import_format"] == IMPORT_FORMAT
+        assert ImportFormat.objects.get(wallet=wallet).amount_column == "Importo"
+
+    def test_replace_import_format(self, user_client, wallet):
+        ImportFormat.objects.create(wallet=wallet, date_column="Date", amount_column="Amount", negate_amounts=True)
+
+        response = user_client.patch(self.url(wallet), {"import_format": IMPORT_FORMAT}, format="json")
+
+        assert response.status_code == 200
+        assert response.json()["import_format"] == IMPORT_FORMAT
+        assert not ImportFormat.objects.get(wallet=wallet).negate_amounts
+
+    def test_partial_import_format(self, user_client, wallet):
+        # The format is replaced as a whole, so its fields are required also by a partial update
+        ImportFormat.objects.create(wallet=wallet, date_column="Date", amount_column="Amount")
+
+        response = user_client.patch(self.url(wallet), {"import_format": {"amount_column": "Importo"}}, format="json")
+
+        assert response.status_code == 400
+        assert set(response.json()["import_format"]) == {"date_column"}
+        assert ImportFormat.objects.get(wallet=wallet).amount_column == "Amount"
+
+    def test_remove_import_format(self, user_client, wallet):
+        ImportFormat.objects.create(wallet=wallet, date_column="Date", amount_column="Amount")
+
+        response = user_client.patch(self.url(wallet), {"import_format": None}, format="json")
+
+        assert response.status_code == 200
+        assert response.json()["import_format"] is None
+        assert not ImportFormat.objects.exists()
+
+    def test_update_keeps_import_format(self, user_client, wallet):
+        ImportFormat.objects.create(wallet=wallet, date_column="Date", amount_column="Amount")
+
+        response = user_client.patch(self.url(wallet), {"name": "Main bank"}, format="json")
+
+        assert response.status_code == 200
+        assert response.json()["import_format"]["date_column"] == "Date"
 
     def test_archive(self, user_client, wallet):
         response = user_client.patch(self.url(wallet), {"is_archived": True}, format="json")

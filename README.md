@@ -32,6 +32,11 @@ shows where the money goes. It is designed to be used by a single household, wit
 - **Wallet**: a place where money lives (bank account, cash, credit card, ...). It has a name, a single currency and can
   be archived instead of deleted. A personal wallet has exactly one owner (a user); a **joint** wallet has none, as it
   belongs to the whole family and receives its contributions.
+- **Import format**: how to read the statements (CSV or xlsx) that the bank of a wallet exports, at most one per wallet:
+  the headers of the date, amount (or income and expense) and description columns, the date format, the decimal
+  separator, the CSV delimiter and whether to invert the sign of the amounts.
+- **Bank movement**: a row of an imported bank statement (date, signed amount, description as written by the bank). It is
+  not a transaction: it is reconciled with the transactions of its wallet, and can be ignored when it needs none.
 - **Category**: classifies transactions (e.g. groceries, rent, salary). Used for reports and budgets.
 - **Budget**: how much a category can spend every month, in one currency; a category can have one budget per
   currency. What it has spent is never stored, it is computed for each month.
@@ -74,8 +79,19 @@ shows where the money goes. It is designed to be used by a single household, wit
   and import them back; wallets, categories and tags are matched by name
   (case-insensitive) and created when missing, the two rows of a transfer share the value of the `transfer` column,
   and a file with any invalid row is rejected as a whole.
+- **Bank statements import**: each wallet can have its import format; from the wallet list, upload a statement (CSV or
+  xlsx) of the bank. The header is searched below any text the bank writes first, and the rows without a valid date
+  (blank lines, totals) are skipped; a file with an invalid amount is rejected as a whole. The movements are not created
+  as transactions but reconciled with them: a movement matches a transaction of the same wallet with the same amount and
+  a date at most 5 days apart, the closest dates first, each transaction matching a single movement. Nothing is stored,
+  so the transactions entered later are reconciled too. The movements without a transaction are suggested above the
+  transaction list, to register them with the form already filled in or to ignore them; the transaction list also links
+  the import of each wallet, with the count of its movements still to check.
+  Statements overlap and banks change the other fields over time, so duplicates are recognized only by date and amount:
+  for each pair, an import adds only the movements beyond the ones already imported (e.g. a third coffee of the same
+  price on the same day).
 - **Maintenance** (admins only): technical tools, starting with deleting all the data (transactions, transfers,
-  recurring transactions, wallets, budgets, family contributions, categories and tags; the users are kept) after typing a confirmation word.
+  recurring transactions, bank movements, wallets, budgets, family contributions, categories and tags; the users are kept) after typing a confirmation word.
 - **Budget**: set a monthly amount for each category and follow, month by month, how much it has spent and how much is
   left. The spent amount is net of the refunds in the same category and leaves transfers out. Recurring transactions
   count with their monthly share (e.g. a yearly bill of 1,200 counts 100 a month, one every 2 weeks 52/24 of its
@@ -123,7 +139,7 @@ Tags were initially in this list and have been moved into the data model.
 - [x] **M8 – v0.4**: budgeting by category.
 - [x] **M9 – v0.5**: family balance: identify shared expenses and compute how much each family member has to transfer to
   the joint account to cover them.
-- [ ] **M10 – v0.6**: CSV/xlsx import from banks: raw import, duplicate handling and reconciliation, warnings for
+- [x] **M10 – v0.6**: CSV/xlsx import from banks: raw import, duplicate handling and reconciliation, warnings for
   transactions that were not entered (manual entry drives the data, imports help find what is missing).
 
 ## Getting started

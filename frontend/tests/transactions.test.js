@@ -146,7 +146,8 @@ describe("transactions", () => {
       });
       // Unknown and repeated parameters are ignored
       const { wrapper } = await mountAt("/transactions?wallet=1&date_from=2026-11-01&tag=5&tag=6&other=1");
-      expect(fetch.mock.lastCall[0]).toBe("/api/transactions/?wallet=1&date_from=2026-11-01");
+      const urls = fetch.mock.calls.map(([url]) => url).filter((url) => url.startsWith("/api/transactions/"));
+      expect(urls.at(-1)).toBe("/api/transactions/?wallet=1&date_from=2026-11-01");
       expect(wrapper.find("select[name=wallet]").element.value).toBe("1");
       expect(wrapper.find("select[name=tag]").element.value).toBe("");
       expect(wrapper.find("input[name=date_from]").element.value).toBe("2026-11-01");
@@ -351,12 +352,58 @@ describe("transactions", () => {
     it("exports the filtered transactions", async () => {
       mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, page(TRANSACTIONS)] });
       const { wrapper } = await mountAt("/transactions");
-      const link = () => wrapper.find("a[download]");
-      expect(link().text()).toBe("Export CSV");
+      // Export and import share a compact menu
+      expect(wrapper.find("button[name=csv]").text()).toBe("CSV");
+      expect(wrapper.find("[data-menu=csv]").exists()).toBe(false);
+      await wrapper.find("button[name=csv]").trigger("click");
+      const link = () => wrapper.find("[data-menu=csv] a[download]");
+      expect(link().text()).toBe("Export");
       expect(link().attributes("href")).toBe("/api/transactions/export/");
       await wrapper.find("select[name=wallet]").setValue("1");
       await wrapper.find("input[name=date_from]").setValue("2026-11-01");
       expect(link().attributes("href")).toBe("/api/transactions/export/?wallet=1&date_from=2026-11-01");
+    });
+
+    it("opens the file chooser from the menu", async () => {
+      mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, page(TRANSACTIONS)] });
+      const { wrapper } = await mountAt("/transactions");
+      const click = vi.spyOn(wrapper.find("input[name=import]").element, "click").mockImplementation(() => {});
+      await wrapper.find("button[name=csv]").trigger("click");
+      await wrapper.find("[data-menu=csv] button[name=import-csv]").trigger("click");
+      expect(click).toHaveBeenCalledOnce();
+      // A choice closes the menu
+      expect(wrapper.find("[data-menu=csv]").exists()).toBe(false);
+    });
+
+    it("closes the menu on a click outside, on Escape and when the page changes", async () => {
+      mockFetch({ ...LOOKUPS, "GET /api/transactions/": [200, page(TRANSACTIONS)] });
+      const { wrapper, router } = await mountAt("/transactions", { attachTo: document.body });
+      const menu = () => wrapper.find("[data-menu=csv]");
+      const toggle = () => wrapper.find("button[name=csv]").trigger("click");
+
+      await toggle();
+      expect(wrapper.find("button[name=csv]").attributes("aria-expanded")).toBe("true");
+      // A second click on the button closes it
+      await wrapper.find("button[name=csv]").element.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await flushPromises();
+      expect(menu().exists()).toBe(false);
+      await toggle();
+      document.body.click();
+      await flushPromises();
+      expect(menu().exists()).toBe(false);
+
+      await toggle();
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+      await flushPromises();
+      expect(menu().exists()).toBe(true);
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+      await flushPromises();
+      expect(menu().exists()).toBe(false);
+
+      await toggle();
+      await router.replace({ query: { kind: "income" } });
+      await flushPromises();
+      expect(menu().exists()).toBe(false);
     });
 
     it("imports a file and reloads the transactions", async () => {
@@ -435,7 +482,8 @@ describe("transactions", () => {
       fetch.mockImplementation(() => new Promise(() => {}));
       await choose(wrapper);
       expect(wrapper.find("input[name=import]").attributes("disabled")).toBeDefined();
-      expect(wrapper.find("label:has(input[name=import])").text()).toBe("Importing…");
+      expect(wrapper.find("button[name=csv]").attributes("disabled")).toBeDefined();
+      expect(wrapper.find("button[name=csv]").text()).toBe("Importing…");
     });
   });
 

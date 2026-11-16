@@ -3,12 +3,25 @@ import datetime
 import pytest
 from django.urls import reverse
 
-from core.models import Budget, Category, Contribution, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
+from core.models import (
+    BankMovement,
+    Budget,
+    Category,
+    Contribution,
+    ImportFormat,
+    RecurringTransaction,
+    Tag,
+    Transaction,
+    Transfer,
+    User,
+    Wallet,
+)
 
 EMPTY = {
     "transactions": 0,
     "transfers": 0,
     "recurring_transactions": 0,
+    "bank_movements": 0,
     "wallets": 0,
     "budgets": 0,
     "contributions": 0,
@@ -51,6 +64,8 @@ def data(user):
         next_date=datetime.date(2026, 12, 1),
     )
     recurring.tags.add(tag)
+    ImportFormat.objects.create(wallet=bank, date_column="Date", amount_column="Amount")
+    BankMovement.objects.create(wallet=bank, date=datetime.date(2026, 11, 1), amount=-10)
 
 
 @pytest.mark.django_db
@@ -65,6 +80,7 @@ class TestMaintenanceDataView:
             "transactions": 3,
             "transfers": 1,
             "recurring_transactions": 1,
+            "bank_movements": 1,
             "wallets": 2,
             "budgets": 1,
             "contributions": 1,
@@ -80,6 +96,7 @@ class TestMaintenanceDataView:
             "transactions": 3,
             "transfers": 1,
             "recurring_transactions": 1,
+            "bank_movements": 1,
             "wallets": 2,
             "budgets": 1,
             "contributions": 1,
@@ -87,8 +104,9 @@ class TestMaintenanceDataView:
             "tags": 1,
         }
         assert admin_client.get(self.url).json() == EMPTY
-        # The users are kept
+        # The users are kept, the import formats go with their wallets
         assert User.objects.count() == 2
+        assert not ImportFormat.objects.exists()
 
     def test_delete_empty(self, admin_client):
         response = admin_client.delete(self.url)
