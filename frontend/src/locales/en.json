@@ -6,6 +6,7 @@
     "budgets": "Budget",
     "categories": "Categories",
     "dashboard": "Dashboard",
+    "family": "Family balance",
     "language": "Language",
     "logout": "Log out",
     "maintenance": "Maintenance",
@@ -132,7 +133,10 @@
       "dateFrom": "From",
       "dateTo": "To",
       "all": "All",
-      "noCategory": "No category"
+      "noCategory": "No category",
+      "shared": "Shared expenses",
+      "sharedOnly": "Shared only",
+      "notShared": "Not shared"
     },
     "columns": {
       "date": "Date",
@@ -158,7 +162,8 @@
         "wallet": "Wallet",
         "category": "Category",
         "tags": "Tags",
-        "notes": "Notes"
+        "notes": "Notes",
+        "is_shared": "Shared expense"
       },
       "kinds": {
         "expense": "Expense",
@@ -176,7 +181,14 @@
         "load": "Unable to load the transaction.",
         "invalid": "Check the fields below.",
         "generic": "Unable to save the transaction: try again later."
-      }
+      },
+      "sharedHint": "Paid from a personal wallet for the whole family: it counts as a contribution to the joint wallets."
+    },
+    "shared": "Shared expense",
+    "family": {
+      "title": "Family transfers",
+      "intro": "What each member still has to transfer to the joint wallets this month, so that everyone contributes in equal measure.",
+      "register": "Register transfer"
     }
   },
   "transfers": {
@@ -247,7 +259,8 @@
         "wallet": "Wallet",
         "category": "Category",
         "tags": "Tags",
-        "notes": "Notes"
+        "notes": "Notes",
+        "is_shared": "Shared expense"
       },
       "units": {
         "weekly": "week | weeks",
@@ -264,7 +277,8 @@
         "load": "Unable to load the recurring transaction.",
         "invalid": "Check the fields below.",
         "generic": "Unable to save the recurring transaction: try again later."
-      }
+      },
+      "sharedHint": "The transactions that register its occurrences are shared expenses too."
     }
   },
   "wallets": {
@@ -275,7 +289,7 @@
     "columns": {
       "name": "Name",
       "currency": "Currency",
-      "owners": "Owners",
+      "owner": "Owner",
       "status": "Status",
       "actions": "Actions"
     },
@@ -297,8 +311,9 @@
       "fields": {
         "name": "Name",
         "currency": "Currency",
-        "owners": "Owners",
-        "is_archived": "Archived"
+        "is_archived": "Archived",
+        "is_shared": "Joint wallet",
+        "owner": "Owner"
       },
       "currencyHint": "Three-letter ISO 4217 code, e.g. EUR. It cannot be changed later.",
       "currencyFixed": "The currency cannot be changed.",
@@ -306,11 +321,12 @@
       "cancel": "Cancel",
       "errors": {
         "load": "Unable to load the wallet.",
-        "noOwners": "Choose at least one owner.",
         "invalid": "Check the fields below.",
         "generic": "Unable to save the wallet: try again later."
-      }
-    }
+      },
+      "sharedHint": "It receives the family contributions: the transfers to it from the personal wallets count as contributions."
+    },
+    "family": "Family"
   },
   "labels": {
     "loading": "Loading…",
@@ -464,6 +480,51 @@
       "delete": "Unable to delete the budget: try again later."
     }
   },
+  "family": {
+    "title": "Family balance",
+    "intro": "How much each user has to transfer to the joint wallets, so that everyone contributes in equal measure: transfers from the personal wallets to the joint ones and shared expenses paid from the personal wallets are added up since the first month of the contribution.",
+    "loading": "Loading…",
+    "empty": "No family contribution yet: set below how much the family transfers to the joint wallets every month.",
+    "month": "Month",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "summary": "{contribution} a month since {since}: each member is due {due}, the level to reach is {level}.",
+    "columns": {
+      "member": "Member",
+      "transfers": "Transfers",
+      "sharedExpenses": "Shared expenses",
+      "paid": "Contributed",
+      "suggested": "To transfer",
+      "actions": "Actions"
+    },
+    "transfer": "Register transfer",
+    "errors": {
+      "load": "Could not load the family balance."
+    },
+    "wallets": "Joint wallets: {names}.",
+    "noWallets": "No joint wallet in this currency: mark one as joint in its settings."
+  },
+  "contributions": {
+    "title": "Family contributions",
+    "intro": "How much the family transfers to the joint wallets every month, in total, from the first month on: every user contributes an equal share of it. One per currency, as amounts are never converted.",
+    "loading": "Loading…",
+    "empty": "No contributions yet: set the monthly amount and the first month.",
+    "currency": "Currency",
+    "amount": "Monthly amount",
+    "amountPlaceholder": "Monthly amount",
+    "startMonth": "First month",
+    "add": "Add",
+    "summary": "{amount} a month since {month}",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirmDelete": "Delete the family contribution in {currency}?",
+    "errors": {
+      "load": "Could not load the family contributions.",
+      "save": "Could not save the family contribution."
+    }
+  },
   "notFound": {
     "title": "Page not found",
     "back": "Back to the dashboard"
@@ -484,6 +545,7 @@
         "recurring_transactions": "recurring transactions",
         "wallets": "wallets",
         "budgets": "budgets",
+        "contributions": "family contributions",
         "categories": "categories",
         "tags": "tags"
       },

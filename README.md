@@ -29,19 +29,23 @@ shows where the money goes. It is designed to be used by a single household, wit
 ## Data model
 
 - **User**: custom user model that logs in with email (no username).
-- **Wallet**: a place where money lives (bank account, cash, credit card, ...). It has a name, a single currency, one
-  or more owners (users) and can be archived instead of deleted.
+- **Wallet**: a place where money lives (bank account, cash, credit card, ...). It has a name, a single currency and can
+  be archived instead of deleted. A personal wallet has exactly one owner (a user); a **joint** wallet has none, as it
+  belongs to the whole family and receives its contributions.
 - **Category**: classifies transactions (e.g. groceries, rent, salary). Used for reports and budgets.
 - **Budget**: how much a category can spend every month, in one currency; a category can have one budget per
   currency. What it has spent is never stored, it is computed for each month.
+- **Family contribution**: how much the family transfers to the joint wallets every month, in total, in one currency
+  (possibly 0), from a first month on; one per currency.
 - **Tag**: free-form labels that can be attached to many transactions (e.g. `holiday-2026`, `car`), orthogonal to
   categories.
 - **Transaction**: a single money movement on a wallet, with a date, a signed amount, a description, an optional
-  category and any number of tags.
+  category, any number of tags and a flag for the **shared expenses**, paid for the whole family.
 - **Transfer**: moves money between two wallets with the same currency, as a pair of transactions (outgoing and
   incoming) that share date, amount, description and notes and are edited and deleted together.
 - **Recurring transaction**: a transaction that repeats every N weeks, months or years from a first due date, until an
-  optional end date, with the same fields as a transaction (wallet, signed amount, description, category, tags, notes).
+  optional end date, with the same fields as a transaction (wallet, signed amount, description, category, tags, notes,
+  shared expense).
   It is not a real transaction: it only keeps the next due date, which moves on when an occurrence is registered or
   skipped. The transactions that register its occurrences keep a link to it, which is cleared if it is deleted.
 
@@ -58,7 +62,7 @@ shows where the money goes. It is designed to be used by a single household, wit
 ## Features
 
 - **Welcome flow**: on first run, create the first user and the first wallet.
-- **Wallets**: create, edit, archive and assign owners.
+- **Wallets**: create, edit, archive and assign the owner of the personal ones.
 - **Transactions**: create, edit and delete transactions; list them 500 at a time with filters (wallet,
   type: income, expenses or transfers, date range, category or no category, tags).
 - **Transfers**: move money between two wallets; both transactions are listed with the others.
@@ -66,17 +70,29 @@ shows where the money goes. It is designed to be used by a single household, wit
   occurrences are suggested above the transaction list, to register them with the form already filled in (date, amount
   and the rest can still be changed) or to skip them. A monthly one on the 31st falls on the last day of shorter months.
 - **CSV export/import**: export the filtered transactions to CSV (`date,wallet,currency,amount,description,category,
-  tags,notes,transfer`, tags separated by `|`) and import them back; wallets, categories and tags are matched by name
+  tags,notes,transfer,shared`, tags separated by `|`, `shared` is `1` for the shared expenses and optional on import)
+  and import them back; wallets, categories and tags are matched by name
   (case-insensitive) and created when missing, the two rows of a transfer share the value of the `transfer` column,
   and a file with any invalid row is rejected as a whole.
 - **Maintenance** (admins only): technical tools, starting with deleting all the data (transactions, transfers,
-  recurring transactions, wallets, budgets, categories and tags; the users are kept) after typing a confirmation word.
+  recurring transactions, wallets, budgets, family contributions, categories and tags; the users are kept) after typing a confirmation word.
 - **Budget**: set a monthly amount for each category and follow, month by month, how much it has spent and how much is
   left. The spent amount is net of the refunds in the same category and leaves transfers out. Recurring transactions
   count with their monthly share (e.g. a yearly bill of 1,200 counts 100 a month, one every 2 weeks 52/24 of its
   amount) in every month from their start date to their end date, even when no occurrence is due, so that their cost
   is spread over the following months; the transactions that register their occurrences are therefore left out, not to
   count them twice.
+- **Family balance** (in the settings, together with the family contributions): every family member (all the active
+  users) contributes in equal measure. For each family contribution and the selected month, each member is due its amount divided
+  by the number of members, for every month from its first one. What they contributed, in the same currency, is the
+  sum of their transfers from their personal wallets to any joint wallet and of the shared expenses paid from their
+  personal wallets (net of the shared refunds), the ones they own. The totals are cumulative, so a settlement is never counted twice: whoever contributed more than
+  due raises the level for the others, and the suggested transfer brings everyone to the same level; the
+  wallets are chosen in the transfer form, filled in when the member has a single personal wallet and the currency a
+  single joint one. The transfers still due
+  in the current month are suggested above the transaction list, like the recurring transactions, until they are
+  registered. Changing the amount
+  recomputes the whole history: move the first month forward to start again.
 - **Monthly dashboard**: income, expenses and balance for the selected month, breakdown by category, comparison with
   the same month of the previous year. In the expenses by category, the categories with a budget show how much of it
   the month used: the bar of the month stacks what is left of the budget, or what goes over it, on what was spent
@@ -105,7 +121,7 @@ Tags were initially in this list and have been moved into the data model.
 - [x] **M6 – v0.2**: transfers between wallets.
 - [x] **M7 – v0.3**: recurring transactions.
 - [x] **M8 – v0.4**: budgeting by category.
-- [ ] **M9 – v0.5**: family balance: identify shared expenses and compute how much each family member has to transfer to
+- [x] **M9 – v0.5**: family balance: identify shared expenses and compute how much each family member has to transfer to
   the joint account to cover them.
 - [ ] **M10 – v0.6**: CSV/xlsx import from banks: raw import, duplicate handling and reconciliation, warnings for
   transactions that were not entered (manual entry drives the data, imports help find what is missing).

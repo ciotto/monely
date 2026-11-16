@@ -38,6 +38,7 @@ class TestWalletListView:
             "currency": "EUR",
             "owners": [user.pk],
             "is_archived": False,
+            "is_shared": False,
             "created_at": wallet.created_at.isoformat().replace("+00:00", "Z"),
         }
 
@@ -52,19 +53,36 @@ class TestWalletCreate:
     url = reverse("api:wallets")
 
     def test_create(self, user_client, user):
-        other = User.objects.create_user("luca@example.com")
-
-        response = user_client.post(
-            self.url, {"name": "Joint account", "currency": "USD", "owners": [user.pk, other.pk]}, format="json"
-        )
+        response = user_client.post(self.url, {"name": "Card", "currency": "USD", "owners": [user.pk]}, format="json")
 
         assert response.status_code == 201
         wallet = Wallet.objects.get()
         assert response.json()["id"] == wallet.pk
-        assert wallet.name == "Joint account"
+        assert wallet.name == "Card"
         assert wallet.currency == "USD"
-        assert set(wallet.owners.all()) == {user, other}
+        assert list(wallet.owners.all()) == [user]
         assert not wallet.is_archived
+        assert not wallet.is_shared
+
+    def test_create_joint(self, user_client, user):
+        response = user_client.post(
+            self.url, {"name": "Joint account", "owners": [user.pk], "is_shared": True}, format="json"
+        )
+
+        assert response.status_code == 201
+        assert response.json()["owners"] == []
+        wallet = Wallet.objects.get()
+        assert wallet.is_shared
+        # It belongs to the whole family
+        assert not wallet.owners.exists()
+
+    def test_create_with_many_owners(self, user_client, user):
+        other = User.objects.create_user("luca@example.com")
+
+        response = user_client.post(self.url, {"name": "Bank", "owners": [user.pk, other.pk]}, format="json")
+
+        assert response.status_code == 400
+        assert response.json() == {"owners": ["A personal wallet has exactly one owner."]}
 
     def test_create_default_currency(self, user_client, user):
         response = user_client.post(self.url, {"name": "Cash", "owners": [user.pk]}, format="json")
@@ -76,7 +94,7 @@ class TestWalletCreate:
         response = user_client.post(self.url, {}, format="json")
 
         assert response.status_code == 400
-        assert set(response.json()) == {"name", "owners"}
+        assert set(response.json()) == {"name"}
 
     def test_create_without_owners(self, user_client):
         response = user_client.post(self.url, {"name": "Cash", "owners": []}, format="json")
@@ -150,6 +168,23 @@ class TestWalletDetail:
 
         assert response.status_code == 400
         assert set(response.json()) == {"owners"}
+
+    def test_update_to_joint_clears_the_owners(self, user_client, wallet):
+        response = user_client.patch(self.url(wallet), {"is_shared": True}, format="json")
+
+        assert response.status_code == 200
+        assert not wallet.owners.exists()
+
+    def test_update_joint_to_personal_needs_an_owner(self, user_client, user):
+        joint = Wallet.objects.create(name="Joint", is_shared=True)
+
+        response = user_client.patch(self.url(joint), {"is_shared": False}, format="json")
+        assert response.status_code == 400
+        assert response.json() == {"owners": ["A personal wallet has exactly one owner."]}
+
+        response = user_client.patch(self.url(joint), {"is_shared": False, "owners": [user.pk]}, format="json")
+        assert response.status_code == 200
+        assert list(joint.owners.all()) == [user]
 
     def test_archive(self, user_client, wallet):
         response = user_client.patch(self.url(wallet), {"is_archived": True}, format="json")

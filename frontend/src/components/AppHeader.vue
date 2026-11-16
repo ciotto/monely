@@ -117,6 +117,13 @@ async function signOut() {
             {{ $t("nav.recurring") }}
           </RouterLink>
           <RouterLink
+            :to="{ name: 'family' }"
+            class="block px-4 py-2 hover:bg-slate-50"
+            active-class="font-semibold text-brand"
+          >
+            {{ $t("nav.family") }}
+          </RouterLink>
+          <RouterLink
             v-if="auth.user.is_staff"
             :to="{ name: 'users' }"
             class="block px-4 py-2 hover:bg-slate-50"

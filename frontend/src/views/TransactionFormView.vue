@@ -26,6 +26,7 @@ const form = reactive({
   category: "",
   tags: [],
   notes: "",
+  is_shared: false,
 });
 const wallets = ref([]);
 const categories = ref([]);
@@ -64,6 +65,7 @@ onMounted(async () => {
         category: source.category ?? "",
         tags: source.tags,
         notes: source.notes,
+        is_shared: source.is_shared,
       });
     } else if (wallets.value.length === 1) {
       form.wallet = wallets.value[0].id;
@@ -256,6 +258,13 @@ async function submit() {
         <span v-for="message in fieldErrors.notes" :key="message" class="mt-1 block text-sm text-expense">
           {{ message }}
         </span>
+      </label>
+      <label class="block">
+        <span class="flex items-center gap-2">
+          <input v-model="form.is_shared" type="checkbox" name="is_shared" class="accent-brand" />
+          <span class="text-sm font-medium">{{ $t("transactions.form.fields.is_shared") }}</span>
+        </span>
+        <span class="mt-1 block text-sm text-slate-500">{{ $t("transactions.form.sharedHint") }}</span>
       </label>
       <div class="flex gap-2">
         <button

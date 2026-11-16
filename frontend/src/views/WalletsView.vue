@@ -1,15 +1,21 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 
 import { apiFetch } from "@/api/client";
 
+const { t } = useI18n();
 const wallets = ref(null);
 const owners = ref({});
 const showArchived = ref(false);
 const error = ref(null);
 const visibleWallets = computed(() => wallets.value.filter((wallet) => showArchived.value || !wallet.is_archived));
 
+// The joint wallets belong to the whole family
 function ownerNames(wallet) {
+  if (wallet.is_shared) {
+    return t("wallets.family");
+  }
   return wallet.owners
     .map((id) => owners.value[id])
     .map((owner) => [owner.first_name, owner.last_name].filter(Boolean).join(" ") || owner.email)
@@ -72,7 +78,7 @@ onMounted(async () => {
             <tr>
               <th class="px-4 py-2 font-medium">{{ $t("wallets.columns.name") }}</th>
               <th class="px-4 py-2 font-medium">{{ $t("wallets.columns.currency") }}</th>
-              <th class="px-4 py-2 font-medium">{{ $t("wallets.columns.owners") }}</th>
+              <th class="px-4 py-2 font-medium">{{ $t("wallets.columns.owner") }}</th>
               <th class="px-4 py-2 font-medium">{{ $t("wallets.columns.status") }}</th>
               <th class="px-4 py-2">
                 <span class="sr-only">{{ $t("wallets.columns.actions") }}</span>

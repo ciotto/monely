@@ -5,7 +5,7 @@ import pytest
 from django.db import IntegrityError
 from django.db.models import ProtectedError
 
-from core.models import Budget, Category, RecurringTransaction, Tag, Transaction, User, Wallet
+from core.models import Budget, Category, Contribution, RecurringTransaction, Tag, Transaction, User, Wallet
 
 
 @pytest.mark.django_db
@@ -103,6 +103,20 @@ class TestBudget:
         budget.category.delete()
 
         assert not Budget.objects.exists()
+
+
+@pytest.mark.django_db
+class TestContribution:
+    def test_str(self):
+        contribution = Contribution.objects.create(amount=Decimal("2000.00"), start_month=datetime.date(2026, 10, 1))
+
+        assert str(contribution) == "2000.00 EUR"
+
+    def test_unique_by_currency(self):
+        Contribution.objects.create(amount=100, start_month=datetime.date(2026, 10, 1))
+
+        with pytest.raises(IntegrityError):
+            Contribution.objects.create(amount=200, start_month=datetime.date(2026, 11, 1))
 
 
 @pytest.mark.parametrize(

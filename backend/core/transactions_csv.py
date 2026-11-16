@@ -9,7 +9,7 @@ from core.models import Category, Tag, Transaction, Transfer, Wallet
 
 # The columns are not translated, so a file can be imported whatever the language of who exported it
 # The two transactions of a transfer share a value of the `transfer` column, only meaningful within the file
-COLUMNS = ("date", "wallet", "currency", "amount", "description", "category", "tags", "notes", "transfer")
+COLUMNS = ("date", "wallet", "currency", "amount", "description", "category", "tags", "notes", "transfer", "shared")
 REQUIRED_COLUMNS = ("date", "wallet", "amount", "description")
 # Joins the names of the tags in a single cell
 TAG_SEPARATOR = "|"
@@ -31,6 +31,7 @@ def write_transactions(transactions, file):
                 TAG_SEPARATOR.join(tag.name for tag in item.tags.all()),
                 item.notes,
                 item.transfer_id or "",
+                "1" if item.is_shared else "",
             )
         )
 
@@ -49,10 +50,14 @@ class TransactionRowSerializer(serializers.Serializer):
     tags = serializers.CharField(required=False, allow_blank=True)
     notes = serializers.CharField(required=False, allow_blank=True, trim_whitespace=False)
     transfer = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    # A shared expense: 1, or empty; files exported before it existed have no such column
+    shared = serializers.BooleanField(required=False, default=False)
 
     def validate(self, attrs):
         if attrs.get("transfer") and (attrs.get("category") or attrs.get("tags")):
             raise serializers.ValidationError({"transfer": [_("A transfer has no category and no tags.")]})
+        if attrs.get("transfer") and attrs["shared"]:
+            raise serializers.ValidationError({"shared": [_("A transfer cannot be a shared expense.")]})
         return attrs
 
     def validate_amount(self, value):
@@ -140,6 +145,7 @@ class TransactionImporter:
             description=data["description"],
             category=category,
             notes=data.get("notes", ""),
+            is_shared=data["shared"],
         )
         item.tags.set([self.get_label(Tag, "tags", name) for name in data.get("tags", [])])
         self.created["transactions"] += 1

@@ -3,7 +3,7 @@ import datetime
 import pytest
 from django.urls import reverse
 
-from core.models import Budget, Category, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
+from core.models import Budget, Category, Contribution, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
 
 EMPTY = {
     "transactions": 0,
@@ -11,6 +11,7 @@ EMPTY = {
     "recurring_transactions": 0,
     "wallets": 0,
     "budgets": 0,
+    "contributions": 0,
     "categories": 0,
     "tags": 0,
 }
@@ -32,6 +33,7 @@ def data(user):
     tag = Tag.objects.create(name="car")
     category = Category.objects.create(name="Transport")
     Budget.objects.create(category=category, amount=100)
+    Contribution.objects.create(amount=1000, start_month=datetime.date(2026, 11, 1))
     item = Transaction.objects.create(
         wallet=bank, date=datetime.date(2026, 11, 1), amount=-10, description="Fuel", category=category
     )
@@ -65,6 +67,7 @@ class TestMaintenanceDataView:
             "recurring_transactions": 1,
             "wallets": 2,
             "budgets": 1,
+            "contributions": 1,
             "categories": 1,
             "tags": 1,
         }
@@ -79,6 +82,7 @@ class TestMaintenanceDataView:
             "recurring_transactions": 1,
             "wallets": 2,
             "budgets": 1,
+            "contributions": 1,
             "categories": 1,
             "tags": 1,
         }

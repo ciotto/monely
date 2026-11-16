@@ -145,6 +145,7 @@ class TestRecurringTransactionListView:
             "category": category.pk,
             "tags": [tag.pk],
             "notes": "Net",
+            "is_shared": False,
             "frequency": "monthly",
             "interval": 1,
             "start_date": "2026-01-27",
@@ -166,12 +167,14 @@ class TestRecurringTransactionListView:
                 "tags": [tag.pk],
                 "frequency": "yearly",
                 "start_date": "2027-03-15",
+                "is_shared": True,
             },
             format="json",
         )
 
         assert response.status_code == 201
         recurring = RecurringTransaction.objects.get()
+        assert recurring.is_shared
         assert response.json()["id"] == recurring.pk
         assert response.json()["next_date"] == "2027-03-15"
         assert (recurring.amount, recurring.interval, recurring.end_date) == (Decimal("-120.50"), 1, None)

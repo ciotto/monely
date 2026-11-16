@@ -11,11 +11,17 @@ const route = useRoute();
 const router = useRouter();
 // Editing an existing transfer when the route has an id, creating a new one otherwise
 const transferId = route.params.id ? Number(route.params.id) : null;
+// A new transfer can come from the family balance, with the suggested amount and wallets
+const prefill = transferId === null ? route.query : {};
+// Back to the list with the filters it was opened from
+const listQuery = Object.fromEntries(
+  Object.entries(route.query).filter(([name]) => !["from_wallet", "to_wallet", "amount"].includes(name)),
+);
 // The amount is positive: it leaves the first wallet and enters the second one
 const form = reactive({
-  from_wallet: "",
-  to_wallet: "",
-  amount: "",
+  from_wallet: prefill.from_wallet ? Number(prefill.from_wallet) : "",
+  to_wallet: prefill.to_wallet ? Number(prefill.to_wallet) : "",
+  amount: prefill.amount ?? "",
   date: today(),
   description: "",
   notes: "",
@@ -77,8 +83,7 @@ async function submit() {
     } else {
       await apiFetch("/transfers/", { method: "POST", body });
     }
-    // Back to the list with the filters it was opened from
-    await router.push({ name: "transactions", query: route.query });
+    await router.push({ name: "transactions", query: listQuery });
   } catch (e) {
     if (e.status === 400) {
       fieldErrors.value = e.data;
@@ -214,7 +219,7 @@ async function submit() {
           {{ $t("transfers.form.save") }}
         </button>
         <RouterLink
-          :to="{ name: 'transactions', query: route.query }"
+          :to="{ name: 'transactions', query: listQuery }"
           class="flex-1 rounded border border-slate-300 px-4 py-2 text-center font-medium hover:border-brand"
         >
           {{ $t("transfers.form.cancel") }}

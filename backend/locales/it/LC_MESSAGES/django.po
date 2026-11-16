@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Monely\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 07:07+0000\n"
+"POT-Creation-Date: 2026-11-15 18:54+0000\n"
 "PO-Revision-Date: 2026-11-13 09:30+0000\n"
 "Last-Translator: Ciotto\n"
 "Language-Team: Italian\n"
@@ -51,148 +51,168 @@ msgstr "utente"
 msgid "users"
 msgstr "utenti"
 
-#: core/models.py:64 core/models.py:87
+#: core/models.py:64 core/models.py:92
 msgid "name"
 msgstr "nome"
 
-#: core/models.py:66 core/models.py:125
+#: core/models.py:66 core/models.py:130 core/models.py:160
 msgid "currency"
 msgstr "valuta"
 
-#: core/models.py:69 core/models.py:128
+#: core/models.py:69 core/models.py:133 core/models.py:164
 msgid "Enter a three-letter ISO 4217 currency code, e.g. EUR."
 msgstr "Inserisci un codice valuta ISO 4217 di tre lettere, es. EUR."
 
-#: core/models.py:71
+#: core/models.py:73
 msgid "owners"
 msgstr "proprietari"
 
-#: core/models.py:72
+#: core/models.py:75
 msgid "archived"
 msgstr "archiviato"
 
-#: core/models.py:73 core/models.py:134 core/models.py:164 core/models.py:215
-#: core/models.py:270
+#: core/models.py:77
+msgid "joint wallet"
+msgstr "portafoglio comune"
+
+#: core/models.py:78 core/models.py:139 core/models.py:171 core/models.py:198
+#: core/models.py:251 core/models.py:308
 msgid "created at"
 msgstr "creato il"
 
-#: core/models.py:76 core/models.py:183 core/models.py:248
+#: core/models.py:81 core/models.py:217 core/models.py:284
 msgid "wallet"
 msgstr "portafoglio"
 
-#: core/models.py:77
+#: core/models.py:82
 msgid "wallets"
 msgstr "portafogli"
 
-#: core/models.py:89
+#: core/models.py:94
 msgid "color"
 msgstr "colore"
 
-#: core/models.py:92
+#: core/models.py:97
 msgid "Enter a hexadecimal color, e.g. #2563eb."
 msgstr "Inserisci un colore esadecimale, es. #2563eb."
 
-#: core/models.py:109
+#: core/models.py:114
 msgid "icon"
 msgstr "icona"
 
-#: core/models.py:112
+#: core/models.py:117
 msgid "Enter the name of an icon, e.g. shopping-cart."
 msgstr "Inserisci il nome di un'icona, es. shopping-cart."
 
-#: core/models.py:116 core/models.py:123 core/models.py:193 core/models.py:258
+#: core/models.py:121 core/models.py:128 core/models.py:227 core/models.py:294
 msgid "category"
 msgstr "categoria"
 
-#: core/models.py:117
+#: core/models.py:122
 msgid "categories"
 msgstr "categorie"
 
-#: core/models.py:132 core/models.py:185 core/models.py:250
+#: core/models.py:137 core/models.py:167 core/models.py:219 core/models.py:286
 msgid "amount"
 msgstr "importo"
 
-#: core/models.py:137
+#: core/models.py:142
 msgid "budget"
 msgstr "budget"
 
-#: core/models.py:138
+#: core/models.py:143
 msgid "budgets"
 msgstr "budget"
 
-#: core/models.py:152
+#: core/models.py:170
+msgid "first month"
+msgstr "primo mese"
+
+#: core/models.py:174
+msgid "family contribution"
+msgstr "contributo familiare"
+
+#: core/models.py:175
+msgid "family contributions"
+msgstr "contributi familiari"
+
+#: core/models.py:186
 msgid "tag"
 msgstr "tag"
 
-#: core/models.py:153 core/models.py:195 core/models.py:260
+#: core/models.py:187 core/models.py:229 core/models.py:296
 msgid "tags"
 msgstr "tag"
 
-#: core/models.py:167 core/models.py:204
+#: core/models.py:201 core/models.py:240
 msgid "transfer"
 msgstr "trasferimento"
 
-#: core/models.py:168
+#: core/models.py:202
 msgid "transfers"
 msgstr "trasferimenti"
 
-#: core/models.py:184
+#: core/models.py:218
 msgid "date"
 msgstr "data"
 
-#: core/models.py:186 core/models.py:251
+#: core/models.py:220 core/models.py:287
 msgid "description"
 msgstr "descrizione"
 
-#: core/models.py:196 core/models.py:261
+#: core/models.py:230 core/models.py:297
 msgid "notes"
 msgstr "note"
 
-#: core/models.py:213 core/models.py:273
+#: core/models.py:232 core/models.py:299
+msgid "shared expense"
+msgstr "spesa comune"
+
+#: core/models.py:249 core/models.py:311
 msgid "recurring transaction"
 msgstr "movimento ricorrente"
 
-#: core/models.py:218
+#: core/models.py:254
 msgid "transaction"
 msgstr "movimento"
 
-#: core/models.py:219
+#: core/models.py:255
 msgid "transactions"
 msgstr "movimenti"
 
-#: core/models.py:242
+#: core/models.py:278
 msgid "weekly"
 msgstr "settimanale"
 
-#: core/models.py:243
+#: core/models.py:279
 msgid "monthly"
 msgstr "mensile"
 
-#: core/models.py:244
+#: core/models.py:280
 msgid "yearly"
 msgstr "annuale"
 
-#: core/models.py:262
+#: core/models.py:300
 msgid "frequency"
 msgstr "frequenza"
 
-#: core/models.py:264
+#: core/models.py:302
 msgid "interval"
 msgstr "intervallo"
 
-#: core/models.py:266
+#: core/models.py:304
 msgid "start date"
 msgstr "data di inizio"
 
-#: core/models.py:267
+#: core/models.py:305
 msgid "end date"
 msgstr "data di fine"
 
-#: core/models.py:269
+#: core/models.py:307
 msgid "next date"
 msgstr "prossima scadenza"
 
-#: core/models.py:274
+#: core/models.py:312
 msgid "recurring transactions"
 msgstr "movimenti ricorrenti"
 
@@ -205,74 +225,86 @@ msgstr ""
 msgid "This recurring transaction has ended."
 msgstr "Questo movimento ricorrente è terminato."
 
-#: core/serializers.py:65
+#: core/serializers.py:71
+msgid "A personal wallet has exactly one owner."
+msgstr "Un portafoglio personale ha un solo titolare."
+
+#: core/serializers.py:85
 msgid "This name is already in use."
 msgstr "Questo nome è già utilizzato."
 
-#: core/serializers.py:96
+#: core/serializers.py:116
 msgid "This category already has a budget in this currency."
 msgstr "Questa categoria ha già un budget in questa valuta."
 
-#: core/serializers.py:108 core/serializers.py:246 core/transactions_csv.py:193
+#: core/serializers.py:136
+msgid "This currency already has a family contribution."
+msgstr "Questa valuta ha già un contributo familiare."
+
+#: core/serializers.py:151 core/serializers.py:291 core/transactions_csv.py:199
 msgid "This wallet is archived."
 msgstr "Questo portafoglio è archiviato."
 
-#: core/serializers.py:113 core/transactions_csv.py:60
+#: core/serializers.py:156 core/transactions_csv.py:65
 msgid "The amount cannot be zero."
 msgstr "L'importo non può essere zero."
 
-#: core/serializers.py:188 core/serializers.py:301
+#: core/serializers.py:233 core/serializers.py:347
 msgid "The end date cannot precede the start date."
 msgstr "La data di fine non può precedere la data di inizio."
 
-#: core/serializers.py:248
+#: core/serializers.py:293
 msgid "Choose a wallet different from the source one."
 msgstr "Scegli un portafoglio diverso da quello di origine."
 
-#: core/serializers.py:250
+#: core/serializers.py:295
 msgid "The wallets must use the same currency."
 msgstr "I portafogli devono usare la stessa valuta."
 
-#: core/serializers.py:351
+#: core/serializers.py:397
 msgid "You cannot change this on your own account."
 msgstr "Non puoi modificare questo campo sul tuo account."
 
-#: core/serializers.py:403
+#: core/serializers.py:449
 msgid "Invalid email or password."
 msgstr "Email o password non valide."
 
-#: core/transactions_csv.py:55
+#: core/transactions_csv.py:58
 msgid "A transfer has no category and no tags."
 msgstr "Un trasferimento non ha categoria né tag."
 
-#: core/transactions_csv.py:68
+#: core/transactions_csv.py:60
+msgid "A transfer cannot be a shared expense."
+msgstr "Un trasferimento non può essere una spesa comune."
+
+#: core/transactions_csv.py:73
 #, python-format
 msgid "Ensure every tag has no more than %(max_length)d characters."
 msgstr "Assicurati che ogni tag non abbia più di %(max_length)d caratteri."
 
-#: core/transactions_csv.py:113
+#: core/transactions_csv.py:118
 msgid "The file must be a CSV encoded in UTF-8."
 msgstr "Il file deve essere un CSV con codifica UTF-8."
 
-#: core/transactions_csv.py:118
+#: core/transactions_csv.py:123
 #, python-format
 msgid "Missing columns: %(columns)s."
 msgstr "Colonne mancanti: %(columns)s."
 
-#: core/transactions_csv.py:122
+#: core/transactions_csv.py:127
 msgid "The file contains no transactions."
 msgstr "Il file non contiene movimenti."
 
-#: core/transactions_csv.py:128
+#: core/transactions_csv.py:133
 #, python-format
 msgid "Row %(number)d, %(field)s: %(message)s"
 msgstr "Riga %(number)d, %(field)s: %(message)s"
 
-#: core/transactions_csv.py:156
+#: core/transactions_csv.py:162
 msgid "A transfer needs exactly two rows."
 msgstr "Un trasferimento richiede esattamente due righe."
 
-#: core/transactions_csv.py:164
+#: core/transactions_csv.py:170
 msgid ""
 "The rows of a transfer need opposite amounts, the same date and different "
 "wallets with the same currency."
@@ -280,16 +312,16 @@ msgstr ""
 "Le righe di un trasferimento richiedono importi opposti, la stessa data e "
 "portafogli diversi con la stessa valuta."
 
-#: core/transactions_csv.py:189
+#: core/transactions_csv.py:195
 msgid "More than one wallet has this name."
 msgstr "Più di un portafoglio ha questo nome."
 
-#: core/transactions_csv.py:196
+#: core/transactions_csv.py:202
 #, python-format
 msgid "The wallet uses %(currency)s."
 msgstr "Il portafoglio usa %(currency)s."
 
-#: core/views.py:131
+#: core/views.py:133
 msgid "You cannot delete your own account."
 msgstr "Non puoi eliminare il tuo account."
 

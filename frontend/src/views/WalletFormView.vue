@@ -10,7 +10,14 @@ const router = useRouter();
 // Editing an existing wallet when the route has an id, creating a new one otherwise
 const walletId = route.params.id ? Number(route.params.id) : null;
 // New wallets belong to the current user unless chosen otherwise
-const form = reactive({ name: "", currency: "EUR", owners: [auth.user.id], is_archived: false });
+const form = reactive({
+  name: "",
+  currency: "EUR",
+  // A personal wallet has a single owner; a joint one belongs to the whole family and receives its contributions
+  owner: auth.user.id,
+  is_shared: false,
+  is_archived: false,
+});
 const owners = ref([]);
 const loaded = ref(false);
 // Messages coming from the backend are already translated, the others are i18n keys
@@ -31,9 +38,11 @@ onMounted(async () => {
     ]);
     owners.value = ownerList;
     if (wallet) {
-      for (const field of ["name", "currency", "owners", "is_archived"]) {
+      for (const field of ["name", "currency", "is_archived", "is_shared"]) {
         form[field] = wallet[field];
       }
+      // A joint wallet has no owner: the current user is proposed if it becomes personal
+      form.owner = wallet.owners[0] ?? auth.user.id;
     }
     loaded.value = true;
   } catch {
@@ -44,12 +53,9 @@ onMounted(async () => {
 async function submit() {
   error.value = null;
   fieldErrors.value = {};
-  if (!form.owners.length) {
-    error.value = "wallets.form.errors.noOwners";
-    return;
-  }
   submitting.value = true;
-  const { currency, ...data } = form;
+  const { currency, owner, ...data } = form;
+  data.owners = data.is_shared ? [] : [owner];
   try {
     // The currency cannot be changed once the wallet exists
     if (walletId !== null) {
@@ -114,10 +120,15 @@ async function submit() {
           {{ message }}
         </span>
       </label>
-      <fieldset>
-        <legend class="text-sm font-medium">{{ $t("wallets.form.fields.owners") }}</legend>
+      <label class="flex items-center gap-2">
+        <input v-model="form.is_shared" type="checkbox" name="is_shared" class="accent-brand" />
+        <span class="text-sm font-medium">{{ $t("wallets.form.fields.is_shared") }}</span>
+      </label>
+      <p v-if="form.is_shared" class="text-sm text-slate-500">{{ $t("wallets.form.sharedHint") }}</p>
+      <fieldset v-else>
+        <legend class="text-sm font-medium">{{ $t("wallets.form.fields.owner") }}</legend>
         <label v-for="owner in owners" :key="owner.id" class="mt-1 flex items-center gap-2 text-sm">
-          <input v-model="form.owners" type="checkbox" name="owners" :value="owner.id" class="accent-brand" />
+          <input v-model="form.owner" type="radio" name="owner" :value="owner.id" class="accent-brand" />
           {{ ownerName(owner) }}
         </label>
         <span v-for="message in fieldErrors.owners" :key="message" class="mt-1 block text-sm text-expense">

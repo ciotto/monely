@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import { authGuard } from "@/auth";
 import BudgetsView from "@/views/BudgetsView.vue";
 import DashboardView from "@/views/DashboardView.vue";
+import FamilyView from "@/views/FamilyView.vue";
 import LabelsView from "@/views/LabelsView.vue";
 import LoginView from "@/views/LoginView.vue";
 import MaintenanceView from "@/views/MaintenanceView.vue";
@@ -25,6 +26,7 @@ const routes = [
   { path: "/transactions/new", name: "transaction-new", component: TransactionFormView },
   { path: "/transactions/:id(\\d+)", name: "transaction-edit", component: TransactionFormView },
   { path: "/budgets", name: "budgets", component: BudgetsView },
+  { path: "/family", name: "family", component: FamilyView, meta: { settings: true } },
   { path: "/transfers/new", name: "transfer-new", component: TransferFormView },
   { path: "/transfers/:id(\\d+)", name: "transfer-edit", component: TransferFormView },
   { path: "/recurring", name: "recurring", component: RecurringView, meta: { settings: true } },

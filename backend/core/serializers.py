@@ -7,7 +7,7 @@ from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from core.models import Budget, Category, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
+from core.models import Budget, Category, Contribution, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
 
 # The transactions of a transfer change only through the transfer, which keeps them consistent
 TRANSFER_LEG_ERROR = _("This transaction belongs to a transfer: edit the transfer instead.")
@@ -37,11 +37,20 @@ class OwnerSerializer(serializers.ModelSerializer):
 
 
 class WalletSerializer(serializers.ModelSerializer):
-    owners = serializers.PrimaryKeyRelatedField(many=True, allow_empty=False, queryset=User.objects.all())
+    # A personal wallet has a single owner, a joint one belongs to the whole family and has none
+    owners = serializers.PrimaryKeyRelatedField(many=True, required=False, queryset=User.objects.all())
 
     class Meta:
         model = Wallet
-        fields = ("id", "name", "currency", "owners", "is_archived", "created_at")
+        fields = (
+            "id",
+            "name",
+            "currency",
+            "owners",
+            "is_archived",
+            "is_shared",
+            "created_at",
+        )
         read_only_fields = ("created_at",)
 
     def get_fields(self):
@@ -50,6 +59,17 @@ class WalletSerializer(serializers.ModelSerializer):
         if self.instance is not None:
             fields["currency"].read_only = True
         return fields
+
+    def validate(self, attrs):
+        # A partial update keeps the other values
+        is_shared = attrs.get("is_shared", getattr(self.instance, "is_shared", False))
+        if is_shared:
+            attrs["owners"] = []
+            return attrs
+        owners = attrs.get("owners", list(self.instance.owners.all()) if self.instance is not None else [])
+        if len(owners) != 1:
+            raise serializers.ValidationError({"owners": _("A personal wallet has exactly one owner.")})
+        return attrs
 
 
 class LabelSerializer(serializers.ModelSerializer):
@@ -97,6 +117,29 @@ class BudgetSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class ContributionSerializer(serializers.ModelSerializer):
+    # A month, e.g. 2026-11, like the filters of the reports
+    start_month = serializers.DateField(format="%Y-%m", input_formats=["%Y-%m", "iso-8601"])
+
+    class Meta:
+        model = Contribution
+        fields = ("id", "currency", "amount", "start_month", "created_at")
+        read_only_fields = ("created_at",)
+        # The uniqueness is checked in validate_currency(), with a clearer message
+        extra_kwargs = {"currency": {"validators": Contribution._meta.get_field("currency").validators}}
+
+    def validate_currency(self, value):
+        queryset = Contribution.objects.filter(currency=value)
+        if self.instance is not None:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        if queryset.exists():
+            raise serializers.ValidationError(_("This currency already has a family contribution."))
+        return value
+
+    def validate_start_month(self, value):
+        return value.replace(day=1)
+
+
 class MovementSerializer(serializers.ModelSerializer):
     """The fields shared by the transactions and the recurring transactions."""
 
@@ -126,6 +169,7 @@ class TransactionSerializer(MovementSerializer):
             "category",
             "tags",
             "notes",
+            "is_shared",
             "transfer",
             "recurring_transaction",
             "created_at",
@@ -170,6 +214,7 @@ class RecurringTransactionSerializer(MovementSerializer):
             "category",
             "tags",
             "notes",
+            "is_shared",
             "frequency",
             "interval",
             "start_date",
@@ -295,6 +340,7 @@ class TransactionFilterSerializer(serializers.Serializer):
     tag = serializers.PrimaryKeyRelatedField(many=True, required=False, queryset=Tag.objects.all())
     date_from = serializers.DateField(required=False)
     date_to = serializers.DateField(required=False)
+    shared = serializers.BooleanField(required=False, default=None, allow_null=True)
 
     def validate(self, attrs):
         if "date_from" in attrs and "date_to" in attrs and attrs["date_from"] > attrs["date_to"]:

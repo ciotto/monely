@@ -28,10 +28,11 @@ const TRANSACTIONS = [
     category: 3,
     tags: [5, 6],
     notes: "Weekly shopping",
+    is_shared: true,
   },
   { id: 8, wallet: 1, date: "2026-11-05", amount: "1500.00", description: "Pay", category: 4, tags: [], notes: "" },
   { id: 9, wallet: 2, date: "2026-10-31", amount: "-9.99", description: "Old", category: null, tags: [], notes: "" },
-];
+].map((transaction) => ({ is_shared: false, ...transaction }));
 // The requests every transaction page makes
 const LOOKUPS = {
   "GET /api/auth/me/": [200, USER],
@@ -76,6 +77,9 @@ describe("transactions", () => {
         "background-color: rgb(220, 38, 38);",
         "background-color: rgb(124, 58, 237);",
       ]);
+      // Only the shared expenses have the badge
+      expect(cells[1].find("[data-shared]").attributes("title")).toBe("Shared expense");
+      expect(wrapper.findAll("[data-shared]")).toHaveLength(1);
       expect(cells[2].find("svg").exists()).toBe(true);
       expect(cells[4].classes()).toContain("text-expense");
       expect(wrapper.findAll("tbody tr")[1].findAll("td")[4].classes()).toContain("text-income");
@@ -123,14 +127,15 @@ describe("transactions", () => {
       await wrapper.find("select[name=kind]").setValue("expense");
       await wrapper.find("select[name=category]").setValue("3");
       await wrapper.find("select[name=tag]").setValue("6");
+      await wrapper.find("select[name=shared]").setValue("true");
       await wrapper.find("input[name=date_from]").setValue("2026-11-01");
       await wrapper.find("input[name=date_to]").setValue("2026-11-30");
       await flushPromises();
       expect(fetch.mock.lastCall[0]).toBe(
-        "/api/transactions/?wallet=1&kind=expense&category=3&tag=6&date_from=2026-11-01&date_to=2026-11-30",
+        "/api/transactions/?wallet=1&kind=expense&category=3&tag=6&shared=true&date_from=2026-11-01&date_to=2026-11-30",
       );
       expect(router.currentRoute.value.fullPath).toBe(
-        "/transactions?wallet=1&kind=expense&category=3&tag=6&date_from=2026-11-01&date_to=2026-11-30",
+        "/transactions?wallet=1&kind=expense&category=3&tag=6&shared=true&date_from=2026-11-01&date_to=2026-11-30",
       );
     });
 
@@ -473,6 +478,7 @@ describe("transactions", () => {
       await wrapper.find("select[name=category]").setValue("3");
       await wrapper.findAll("input[name=tags]")[1].setChecked(true);
       await wrapper.find("textarea[name=notes]").setValue("Weekly shopping");
+      await wrapper.find("input[name=is_shared]").setChecked(true);
       expect(wrapper.findAll("input[name=tags]")[1].element.closest("label").classList).toContain("text-white");
       await submit(wrapper);
       expect(lastBody(fetch, "/api/transactions/", "POST")).toEqual({
@@ -481,6 +487,7 @@ describe("transactions", () => {
         description: "Supermarket",
         tags: [6],
         notes: "Weekly shopping",
+        is_shared: true,
         amount: "-42.3",
         category: 3,
       });
@@ -512,6 +519,7 @@ describe("transactions", () => {
         description: "Gift",
         tags: [],
         notes: "",
+        is_shared: false,
         amount: "100",
         category: null,
       });
@@ -544,6 +552,7 @@ describe("transactions", () => {
         description: "Pay",
         tags: [],
         notes: "",
+        is_shared: false,
         amount: "1600",
         category: null,
       });

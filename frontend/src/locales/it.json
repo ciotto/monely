@@ -6,6 +6,7 @@
     "budgets": "Budget",
     "categories": "Categorie",
     "dashboard": "Dashboard",
+    "family": "Bilancio familiare",
     "language": "Lingua",
     "logout": "Esci",
     "maintenance": "Manutenzione",
@@ -132,7 +133,10 @@
       "dateFrom": "Dal",
       "dateTo": "Al",
       "all": "Tutti",
-      "noCategory": "Nessuna categoria"
+      "noCategory": "Nessuna categoria",
+      "shared": "Spese comuni",
+      "sharedOnly": "Solo comuni",
+      "notShared": "Non comuni"
     },
     "columns": {
       "date": "Data",
@@ -158,7 +162,8 @@
         "wallet": "Portafoglio",
         "category": "Categoria",
         "tags": "Tag",
-        "notes": "Note"
+        "notes": "Note",
+        "is_shared": "Spesa comune"
       },
       "kinds": {
         "expense": "Uscita",
@@ -176,7 +181,14 @@
         "load": "Impossibile caricare il movimento.",
         "invalid": "Controlla i campi qui sotto.",
         "generic": "Impossibile salvare il movimento: riprova più tardi."
-      }
+      },
+      "sharedHint": "Pagata da un portafoglio personale per tutta la famiglia: conta come contributo ai portafogli comuni."
+    },
+    "shared": "Spesa comune",
+    "family": {
+      "title": "Trasferimenti familiari",
+      "intro": "Quanto ogni membro deve ancora trasferire ai portafogli comuni questo mese, perché tutti contribuiscano in egual misura.",
+      "register": "Registra trasferimento"
     }
   },
   "transfers": {
@@ -247,7 +259,8 @@
         "wallet": "Portafoglio",
         "category": "Categoria",
         "tags": "Tag",
-        "notes": "Note"
+        "notes": "Note",
+        "is_shared": "Spesa comune"
       },
       "units": {
         "weekly": "settimana | settimane",
@@ -264,7 +277,8 @@
         "load": "Impossibile caricare il movimento ricorrente.",
         "invalid": "Controlla i campi qui sotto.",
         "generic": "Impossibile salvare il movimento ricorrente: riprova più tardi."
-      }
+      },
+      "sharedHint": "Anche le transazioni che registrano le sue occorrenze sono spese comuni."
     }
   },
   "wallets": {
@@ -275,7 +289,7 @@
     "columns": {
       "name": "Nome",
       "currency": "Valuta",
-      "owners": "Titolari",
+      "owner": "Titolare",
       "status": "Stato",
       "actions": "Azioni"
     },
@@ -297,8 +311,9 @@
       "fields": {
         "name": "Nome",
         "currency": "Valuta",
-        "owners": "Titolari",
-        "is_archived": "Archiviato"
+        "is_archived": "Archiviato",
+        "is_shared": "Portafoglio comune",
+        "owner": "Titolare"
       },
       "currencyHint": "Codice ISO 4217 di tre lettere, ad esempio EUR. Non potrà essere cambiato.",
       "currencyFixed": "La valuta non può essere cambiata.",
@@ -306,11 +321,12 @@
       "cancel": "Annulla",
       "errors": {
         "load": "Impossibile caricare il portafoglio.",
-        "noOwners": "Scegli almeno un titolare.",
         "invalid": "Controlla i campi qui sotto.",
         "generic": "Impossibile salvare il portafoglio: riprova più tardi."
-      }
-    }
+      },
+      "sharedHint": "Riceve i contributi della famiglia: i trasferimenti dai portafogli personali verso di esso contano come contributi."
+    },
+    "family": "Famiglia"
   },
   "labels": {
     "loading": "Caricamento…",
@@ -464,6 +480,51 @@
       "delete": "Impossibile eliminare il budget: riprova più tardi."
     }
   },
+  "family": {
+    "title": "Bilancio familiare",
+    "intro": "Quanto ogni utente deve trasferire ai portafogli comuni perché tutti contribuiscano in egual misura: i trasferimenti dai portafogli personali a quelli comuni e le spese comuni pagate dai portafogli personali si sommano dal primo mese del contributo.",
+    "loading": "Caricamento…",
+    "empty": "Ancora nessun contributo familiare: imposta qui sotto quanto la famiglia trasferisce ogni mese ai portafogli comuni.",
+    "month": "Mese",
+    "previousMonth": "Mese precedente",
+    "nextMonth": "Mese successivo",
+    "summary": "{contribution} al mese da {since}: ogni membro deve {due}, il livello da raggiungere è {level}.",
+    "columns": {
+      "member": "Membro",
+      "transfers": "Trasferimenti",
+      "sharedExpenses": "Spese comuni",
+      "paid": "Versato",
+      "suggested": "Da trasferire",
+      "actions": "Azioni"
+    },
+    "transfer": "Registra trasferimento",
+    "errors": {
+      "load": "Impossibile caricare il bilancio familiare."
+    },
+    "wallets": "Portafogli comuni: {names}.",
+    "noWallets": "Nessun portafoglio comune in questa valuta: segnane uno come comune nelle sue impostazioni."
+  },
+  "contributions": {
+    "title": "Contributi familiari",
+    "intro": "Quanto la famiglia trasferisce ogni mese ai portafogli comuni, in totale, dal primo mese in poi: ogni utente ne versa una quota uguale. Uno per valuta, perché gli importi non vengono mai convertiti.",
+    "loading": "Caricamento…",
+    "empty": "Ancora nessun contributo: imposta l'importo mensile e il primo mese.",
+    "currency": "Valuta",
+    "amount": "Importo mensile",
+    "amountPlaceholder": "Importo mensile",
+    "startMonth": "Primo mese",
+    "add": "Aggiungi",
+    "summary": "{amount} al mese da {month}",
+    "edit": "Modifica",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "delete": "Elimina",
+    "confirmDelete": "Eliminare il contributo familiare in {currency}?",
+    "errors": {
+      "load": "Impossibile caricare i contributi familiari.",
+      "save": "Impossibile salvare il contributo familiare."
+    }
+  },
   "notFound": {
     "title": "Pagina non trovata",
     "back": "Torna alla dashboard"
@@ -484,6 +545,7 @@
         "recurring_transactions": "movimenti ricorrenti",
         "wallets": "portafogli",
         "budgets": "budget",
+        "contributions": "contributi familiari",
         "categories": "categorie",
         "tags": "tag"
       },

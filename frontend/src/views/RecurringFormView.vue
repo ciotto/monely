@@ -20,6 +20,7 @@ const form = reactive({
   category: "",
   tags: [],
   notes: "",
+  is_shared: false,
   interval: 1,
   frequency: "monthly",
   start_date: today(),
@@ -59,6 +60,7 @@ onMounted(async () => {
         category: recurring.category ?? "",
         tags: recurring.tags,
         notes: recurring.notes,
+        is_shared: recurring.is_shared,
         interval: recurring.interval,
         frequency: recurring.frequency,
         start_date: recurring.start_date,
@@ -300,6 +302,13 @@ async function submit() {
         <span v-for="message in fieldErrors.notes" :key="message" class="mt-1 block text-sm text-expense">
           {{ message }}
         </span>
+      </label>
+      <label class="block">
+        <span class="flex items-center gap-2">
+          <input v-model="form.is_shared" type="checkbox" name="is_shared" class="accent-brand" />
+          <span class="text-sm font-medium">{{ $t("recurring.form.fields.is_shared") }}</span>
+        </span>
+        <span class="mt-1 block text-sm text-slate-500">{{ $t("recurring.form.sharedHint") }}</span>
       </label>
       <div class="flex gap-2">
         <button

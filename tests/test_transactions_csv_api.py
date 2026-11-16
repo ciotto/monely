@@ -7,7 +7,7 @@ from django.urls import reverse
 
 from core.models import Category, Tag, Transaction, Transfer, Wallet
 
-HEADER = "date,wallet,currency,amount,description,category,tags,notes,transfer\r\n"
+HEADER = "date,wallet,currency,amount,description,category,tags,notes,transfer,shared\r\n"
 
 
 @pytest.fixture
@@ -39,7 +39,9 @@ class TestTransactionExportView:
     def test_export(self, user_client, wallet):
         category = Category.objects.create(name="Groceries")
         tags = [Tag.objects.create(name="holiday-2026"), Tag.objects.create(name="car")]
-        create_transaction(wallet, day=5, amount="1500.50", category=category, tags=tags, notes='Line 1\n"Line 2"')
+        create_transaction(
+            wallet, day=5, amount="1500.50", category=category, tags=tags, notes='Line 1\n"Line 2"', is_shared=True
+        )
         create_transaction(Wallet.objects.create(name="Card", currency="USD"), day=1)
 
         response = user_client.get(self.url)
@@ -51,8 +53,8 @@ class TestTransactionExportView:
         assert response.content.decode() == (
             "﻿"
             + HEADER
-            + "2026-11-01,Card,USD,-10.00,Shopping,,,,\r\n"
-            + '2026-11-05,Bank,EUR,1500.50,Shopping,Groceries,car|holiday-2026,"Line 1\n""Line 2""",\r\n'
+            + "2026-11-01,Card,USD,-10.00,Shopping,,,,,\r\n"
+            + '2026-11-05,Bank,EUR,1500.50,Shopping,Groceries,car|holiday-2026,"Line 1\n""Line 2""",,1\r\n'
         )
 
     def test_export_transfer(self, user_client, wallet):
@@ -63,8 +65,8 @@ class TestTransactionExportView:
         response = user_client.get(self.url)
 
         assert response.content.decode().splitlines()[1:] == [
-            f"2026-11-03,Bank,EUR,-50.00,Shopping,,,,{transfer.pk}",
-            f"2026-11-03,Cash,EUR,50.00,Shopping,,,,{transfer.pk}",
+            f"2026-11-03,Bank,EUR,-50.00,Shopping,,,,{transfer.pk},",
+            f"2026-11-03,Cash,EUR,50.00,Shopping,,,,{transfer.pk},",
         ]
 
     def test_export_filtered(self, user_client, wallet):
@@ -74,7 +76,7 @@ class TestTransactionExportView:
 
         response = user_client.get(self.url, {"tag": tag.pk, "date_from": "2026-11-01"})
 
-        assert response.content.decode().splitlines()[1:] == ["2026-11-01,Bank,EUR,-10.00,Shopping,,car,,"]
+        assert response.content.decode().splitlines()[1:] == ["2026-11-01,Bank,EUR,-10.00,Shopping,,car,,,"]
 
     def test_export_invalid_filters(self, user_client):
         response = user_client.get(self.url, {"date_from": "2026-11-02", "date_to": "2026-11-01"})
@@ -109,7 +111,7 @@ class TestTransactionImportView:
             + HEADER
             + "2026-11-01,bank,EUR,-10.50,Supermarket,groceries,CAR | holiday-2026,\r\n"
             + '2026-11-02,Card,USD,1500,Pay,Salary,holiday-2026|,"Line 1\n""Line 2"""\r\n'
-            + "2026-11-03,Card,,-1.00,Coffee,,,\r\n",
+            + "2026-11-03,Card,,-1.00,Coffee,,,,,1\r\n",
         )
 
         assert response.status_code == 201
@@ -122,11 +124,12 @@ class TestTransactionImportView:
         assert salary.color == "#64748b"
         transactions = Transaction.objects.order_by("id")
         assert [
-            (t.wallet, t.date, t.amount, t.description, t.category, list(t.tags.all()), t.notes) for t in transactions
+            (t.wallet, t.date, t.amount, t.description, t.category, list(t.tags.all()), t.notes, t.is_shared)
+            for t in transactions
         ] == [
-            (wallet, datetime.date(2026, 11, 1), Decimal("-10.50"), "Supermarket", category, [tag, holiday], ""),
-            (card, datetime.date(2026, 11, 2), Decimal("1500.00"), "Pay", salary, [holiday], 'Line 1\n"Line 2"'),
-            (card, datetime.date(2026, 11, 3), Decimal("-1.00"), "Coffee", None, [], ""),
+            (wallet, datetime.date(2026, 11, 1), Decimal("-10.50"), "Supermarket", category, [tag, holiday], "", False),
+            (card, datetime.date(2026, 11, 2), Decimal("1500.00"), "Pay", salary, [holiday], 'Line 1\n"Line 2"', False),
+            (card, datetime.date(2026, 11, 3), Decimal("-1.00"), "Coffee", None, [], "", True),
         ]
 
     def test_import_new_wallet_default_currency(self, user_client):
@@ -135,11 +138,13 @@ class TestTransactionImportView:
         assert response.status_code == 201
         assert response.json() == {"transactions": 1, "wallets": 1, "categories": 0, "tags": 0}
         assert Wallet.objects.get().currency == "EUR"
+        # Files exported before the shared expenses have no `shared` column
+        assert not Transaction.objects.get().is_shared
 
     def test_import_round_trip(self, user_client, wallet):
         tags = [Tag.objects.create(name="car")]
         create_transaction(wallet, day=1, category=Category.objects.create(name="Fuel"), tags=tags, notes="Full")
-        create_transaction(wallet, day=2, amount="100.00")
+        create_transaction(wallet, day=2, amount="-100.00", is_shared=True)
         exported = user_client.get(reverse("api:transactions-export")).content
         Transaction.objects.all().delete()
 
@@ -181,7 +186,7 @@ class TestTransactionImportView:
         assert response.status_code == 201
         new = Transfer.objects.get()
         assert user_client.get(reverse("api:transactions-export")).content == exported.replace(
-            f",{transfer.pk}\r\n".encode(), f",{new.pk}\r\n".encode()
+            f",{transfer.pk},\r\n".encode(), f",{new.pk},\r\n".encode()
         )
 
     @pytest.mark.parametrize(
@@ -198,6 +203,7 @@ class TestTransactionImportView:
             (["2026-11-01,Bank,EUR,-50,ATM,,,,a", "2026-11-01,Card,USD,50,ATM,,,,a"], "MISMATCH"),
             (["2026-11-01,Bank,EUR,-50,ATM,Fees,,,a"], "Row 2, transfer: A transfer has no category and no tags."),
             (["2026-11-01,Bank,EUR,-50,ATM,,car,,a"], "Row 2, transfer: A transfer has no category and no tags."),
+            (["2026-11-01,Bank,EUR,-50,ATM,,,,a,1"], "Row 2, shared: A transfer cannot be a shared expense."),
         ],
     )
     def test_import_invalid_transfer(self, user_client, wallet, rows, error):

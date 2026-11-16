@@ -473,8 +473,9 @@ describe("App", () => {
       { id: 2, email: "luca@example.com", first_name: "", last_name: "" },
     ];
     const WALLETS = [
-      { id: 1, name: "Bank", currency: "EUR", owners: [1, 2], is_archived: false },
-      { id: 2, name: "Old card", currency: "USD", owners: [2], is_archived: true },
+      { id: 1, name: "Bank", currency: "EUR", owners: [1], is_archived: false, is_shared: false },
+      { id: 2, name: "Old card", currency: "USD", owners: [2], is_archived: true, is_shared: false },
+      { id: 3, name: "Joint", currency: "EUR", owners: [], is_archived: false, is_shared: true },
     ];
 
     const rows = (wrapper) => wrapper.findAll("tbody tr").map((row) => row.findAll("td").map((cell) => cell.text()));
@@ -491,7 +492,18 @@ describe("App", () => {
       await flushPromises();
       expect(router.currentRoute.value.name).toBe("wallets");
       expect(wrapper.find("h1").text()).toBe("Wallets");
-      expect(rows(wrapper)).toEqual([["Bank", "EUR", "Anna Bianchi, luca@example.com", "Active", "EditArchive"]]);
+      expect(wrapper.findAll("thead th").map((cell) => cell.text())).toEqual([
+        "Name",
+        "Currency",
+        "Owner",
+        "Status",
+        "Actions",
+      ]);
+      // The joint wallets belong to the whole family
+      expect(rows(wrapper)).toEqual([
+        ["Bank", "EUR", "Anna Bianchi", "Active", "EditArchive"],
+        ["Joint", "EUR", "Family", "Active", "EditArchive"],
+      ]);
 
       await wrapper.find("input[name=show_archived]").setChecked(true);
       expect(rows(wrapper)[1]).toEqual(["Old card", "USD", "luca@example.com", "Archived", "EditRestore"]);
@@ -526,7 +538,7 @@ describe("App", () => {
     it("archives and restores a wallet", async () => {
       const fetch = mockFetch({
         "GET /api/auth/me/": [200, USER],
-        "GET /api/wallets/": [200, structuredClone(WALLETS)],
+        "GET /api/wallets/": [200, structuredClone(WALLETS.slice(0, 2))],
         "GET /api/wallets/owners/": [200, OWNERS],
         "PATCH /api/wallets/1/": [200, { ...WALLETS[0], is_archived: true }],
       });
@@ -548,7 +560,7 @@ describe("App", () => {
     it("shows an error when archiving fails", async () => {
       mockFetch({
         "GET /api/auth/me/": [200, USER],
-        "GET /api/wallets/": [200, structuredClone(WALLETS)],
+        "GET /api/wallets/": [200, structuredClone(WALLETS.slice(0, 2))],
         "GET /api/wallets/owners/": [200, OWNERS],
         "PATCH /api/wallets/1/": [500, {}],
       });
@@ -590,21 +602,57 @@ describe("App", () => {
       expect(wrapper.find("h1").text()).toBe("New wallet");
       expect(wrapper.find("input[name=currency]").element.value).toBe("EUR");
       expect(wrapper.find("input[name=is_archived]").exists()).toBe(false);
-      const owners = wrapper.findAll("input[name=owners]");
+      // A single owner, the current user unless chosen otherwise
+      const owners = wrapper.findAll("input[name=owner]");
+      expect(owners.map((input) => input.attributes("type"))).toEqual(["radio", "radio"]);
       expect(owners.map((input) => input.element.checked)).toEqual([true, false]);
       expect(wrapper.find("fieldset").text()).toContain("luca@example.com");
 
-      await fill(wrapper, { name: "Joint account", currency: "usd" });
+      await fill(wrapper, { name: "Card", currency: "usd" });
       await owners[1].setChecked(true);
       await submit(wrapper);
       const [url, { method, body }] = fetch.mock.calls.at(-3);
       expect([url, method]).toEqual(["/api/wallets/", "POST"]);
-      expect(JSON.parse(body)).toEqual({ name: "Joint account", currency: "USD", owners: [1, 2], is_archived: false });
+      expect(JSON.parse(body)).toEqual({
+        name: "Card",
+        currency: "USD",
+        owners: [2],
+        is_archived: false,
+        is_shared: false,
+      });
       expect(router.currentRoute.value.name).toBe("wallets");
     });
 
+    it("creates a joint wallet", async () => {
+      const fetch = mockFetch({
+        "GET /api/auth/me/": [200, USER],
+        "GET /api/wallets/owners/": [200, OWNERS],
+        "POST /api/wallets/": [201, {}],
+        "GET /api/wallets/": [200, []],
+      });
+      const { wrapper } = await mountAt("/wallets/new");
+      expect(wrapper.text()).not.toContain("It receives the family contributions");
+
+      await wrapper.find("input[name=is_shared]").setChecked(true);
+      expect(wrapper.text()).toContain("It receives the family contributions");
+      // It belongs to the whole family
+      expect(wrapper.find("input[name=owner]").exists()).toBe(false);
+      await fill(wrapper, { name: "Joint account" });
+      await submit(wrapper);
+      const [url, { method, body }] = fetch.mock.calls.at(-3);
+      expect([url, method]).toEqual(["/api/wallets/", "POST"]);
+      expect(JSON.parse(body)).toMatchObject({ name: "Joint account", is_shared: true, owners: [] });
+    });
+
     it("edits a wallet without changing the currency", async () => {
-      const wallet = { id: 3, name: "Bank", currency: "EUR", owners: [2], is_archived: false };
+      const wallet = {
+        id: 3,
+        name: "Bank",
+        currency: "EUR",
+        owners: [2],
+        is_archived: false,
+        is_shared: false,
+      };
       const fetch = mockFetch({
         "GET /api/auth/me/": [200, USER],
         "GET /api/wallets/owners/": [200, OWNERS],
@@ -617,25 +665,40 @@ describe("App", () => {
       expect(wrapper.find("input[name=name]").element.value).toBe("Bank");
       expect(wrapper.find("input[name=currency]").attributes("disabled")).toBeDefined();
       expect(wrapper.text()).toContain("The currency cannot be changed.");
-      expect(wrapper.findAll("input[name=owners]").map((input) => input.element.checked)).toEqual([false, true]);
+      expect(wrapper.findAll("input[name=owner]").map((input) => input.element.checked)).toEqual([false, true]);
+      expect(wrapper.find("input[name=is_shared]").element.checked).toBe(false);
 
       await fill(wrapper, { name: "Main bank" });
       await wrapper.find("input[name=is_archived]").setChecked(true);
       await submit(wrapper);
       const [url, { method, body }] = fetch.mock.calls.at(-3);
       expect([url, method]).toEqual(["/api/wallets/3/", "PATCH"]);
-      expect(JSON.parse(body)).toEqual({ name: "Main bank", owners: [2], is_archived: true });
+      expect(JSON.parse(body)).toEqual({
+        name: "Main bank",
+        owners: [2],
+        is_archived: true,
+        is_shared: false,
+      });
       expect(router.currentRoute.value.name).toBe("wallets");
     });
 
-    it("requires at least one owner", async () => {
-      const fetch = mockFetch({ "GET /api/auth/me/": [200, USER], "GET /api/wallets/owners/": [200, OWNERS] });
-      const { wrapper } = await mountAt("/wallets/new");
-      await fill(wrapper, { name: "Cash" });
-      await wrapper.find("input[name=owners]").setChecked(false);
+    it("turns a joint wallet into a personal one of the current user", async () => {
+      const wallet = { id: 3, name: "Joint", currency: "EUR", owners: [], is_archived: false, is_shared: true };
+      const fetch = mockFetch({
+        "GET /api/auth/me/": [200, USER],
+        "GET /api/wallets/owners/": [200, OWNERS],
+        "GET /api/wallets/3/": [200, wallet],
+        "PATCH /api/wallets/3/": [200, wallet],
+        "GET /api/wallets/": [200, [wallet]],
+      });
+      const { wrapper } = await mountAt("/wallets/3");
+      expect(wrapper.find("input[name=owner]").exists()).toBe(false);
+
+      await wrapper.find("input[name=is_shared]").setChecked(false);
+      expect(wrapper.findAll("input[name=owner]").map((input) => input.element.checked)).toEqual([true, false]);
       await submit(wrapper);
-      expect(wrapper.find("[role=alert]").text()).toBe("Choose at least one owner.");
-      expect(fetch).toHaveBeenCalledTimes(2);
+      const [, { body }] = fetch.mock.calls.at(-3);
+      expect(JSON.parse(body)).toMatchObject({ owners: [1], is_shared: false });
     });
 
     it("shows the field errors returned by the backend", async () => {

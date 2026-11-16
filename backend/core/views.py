@@ -30,13 +30,15 @@ from rest_framework.views import APIView
 
 from core.budgets import build_budgets
 from core.dashboard import build_dashboard
-from core.models import Budget, Category, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
+from core.family import build_family_balance
+from core.models import Budget, Category, Contribution, RecurringTransaction, Tag, Transaction, Transfer, User, Wallet
 from core.serializers import (
     RECURRING_ENDED_ERROR,
     TRANSFER_LEG_ERROR,
     AdminUserSerializer,
     BudgetSerializer,
     CategorySerializer,
+    ContributionSerializer,
     DashboardFilterSerializer,
     LoginSerializer,
     MonthFilterSerializer,
@@ -189,6 +191,25 @@ class BudgetSummaryView(APIView):
         return Response(build_budgets(filters.validated_data.get("month", timezone.localdate()).replace(day=1)))
 
 
+class ContributionListView(ListCreateAPIView):
+    queryset = Contribution.objects.all()
+    serializer_class = ContributionSerializer
+
+
+class ContributionDetailView(RetrieveUpdateDestroyAPIView):
+    queryset = Contribution.objects.all()
+    serializer_class = ContributionSerializer
+
+
+class FamilyBalanceView(APIView):
+    """How much each member of the family has to transfer to the joint wallets."""
+
+    def get(self, request):
+        filters = MonthFilterSerializer(data=request.query_params)
+        filters.is_valid(raise_exception=True)
+        return Response(build_family_balance(filters.validated_data.get("month", timezone.localdate()).replace(day=1)))
+
+
 class TransactionFilterMixin:
     """Filters the transactions with the query parameters of the list."""
 
@@ -214,6 +235,8 @@ class TransactionFilterMixin:
         elif "category" in data:
             # The transactions of a transfer have no category either, but they are shown as transfers
             queryset = queryset.filter(category=None, transfer=None)
+        if data["shared"] is not None:
+            queryset = queryset.filter(is_shared=data["shared"])
         if data.get("tag"):
             queryset = queryset.filter(tags__in=data["tag"]).distinct()
         if "date_from" in data:
@@ -343,6 +366,7 @@ class MaintenanceDataView(APIView):
         "recurring_transactions": RecurringTransaction,
         "wallets": Wallet,
         "budgets": Budget,
+        "contributions": Contribution,
         "categories": Category,
         "tags": Tag,
     }

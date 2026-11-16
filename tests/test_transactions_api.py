@@ -63,6 +63,7 @@ class TestTransactionListView:
             # Ordered by name, like the tags themselves
             "tags": [tags[1].pk, tags[0].pk],
             "notes": "November salary",
+            "is_shared": False,
             "transfer": None,
             "recurring_transaction": None,
             "created_at": transaction.created_at.isoformat().replace("+00:00", "Z"),
@@ -143,6 +144,14 @@ class TestTransactionListView:
 
         assert [item["id"] for item in response.json()["results"]] == [transaction.pk]
 
+    @pytest.mark.parametrize("shared, expected", [("true", [0]), ("false", [1])])
+    def test_filter_by_shared(self, user_client, wallet, shared, expected):
+        transactions = [create_transaction(wallet, is_shared=True), create_transaction(wallet)]
+
+        response = user_client.get(self.url, {"shared": shared})
+
+        assert [item["id"] for item in response.json()["results"]] == [transactions[i].pk for i in expected]
+
     def test_filter_by_tags(self, user_client, wallet, tags):
         # A transaction matches when it has any of the tags, and it is listed once
         both = create_transaction(wallet, day=3, tags=tags)
@@ -205,6 +214,7 @@ class TestTransactionCreate:
                 "category": category.pk,
                 "tags": [tag.pk for tag in tags],
                 "notes": "Weekly shopping",
+                "is_shared": True,
             },
             format="json",
         )
@@ -219,6 +229,7 @@ class TestTransactionCreate:
         assert transaction.category == category
         assert set(transaction.tags.all()) == set(tags)
         assert transaction.notes == "Weekly shopping"
+        assert transaction.is_shared
 
     def test_create_minimal(self, user_client, wallet):
         response = user_client.post(

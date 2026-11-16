@@ -1,11 +1,12 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
-import { ArrowLeftRight, Repeat } from "@lucide/vue";
+import { ArrowLeftRight, Repeat, Users } from "@lucide/vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 
 import { apiFetch } from "@/api/client";
 import CategoryIcon from "@/components/CategoryIcon.vue";
+import { memberName, pendingTransfers, transferQuery } from "@/family";
 import { formatAmount, formatDate, today } from "@/format";
 
 const { t, locale } = useI18n();
@@ -25,7 +26,7 @@ const tags = computed(() => byId(tagList.value));
 // Empty values do not filter; they start from the URL, so they survive a reload and the round trip to the forms
 const filters = reactive(
   Object.fromEntries(
-    ["wallet", "kind", "category", "tag", "date_from", "date_to"].map((name) => {
+    ["wallet", "kind", "category", "tag", "shared", "date_from", "date_to"].map((name) => {
       const value = route.query[name];
       return [name, typeof value === "string" ? value : ""];
     }),
@@ -40,6 +41,8 @@ const query = computed(() => {
 });
 // The occurrences of the recurring transactions due soon or overdue, suggested to be registered or skipped
 const due = ref([]);
+// The transfers to the joint wallets that the family members still owe this month
+const familyTransfers = ref([]);
 const error = ref(null);
 const filterErrors = ref([]);
 // The counts of the created objects after an import, or the errors of the rejected file
@@ -170,7 +173,19 @@ watch(filters, () => {
   loadTransactions();
 });
 
-onMounted(load);
+// The suggestions are optional: the list works without them
+async function loadFamilyTransfers() {
+  try {
+    familyTransfers.value = pendingTransfers(await apiFetch("/family-balance/"));
+  } catch {
+    familyTransfers.value = [];
+  }
+}
+
+onMounted(() => {
+  loadFamilyTransfers();
+  load();
+});
 </script>
 
 <template>
@@ -262,10 +277,32 @@ onMounted(load);
         </li>
       </ul>
     </div>
+    <div v-if="familyTransfers.length" data-family class="mt-6 rounded-lg border border-brand/30 bg-white p-4">
+      <h2 class="font-semibold">{{ $t("transactions.family.title") }}</h2>
+      <p class="text-sm text-slate-500">{{ $t("transactions.family.intro") }}</p>
+      <ul class="mt-2 divide-y divide-slate-100 text-sm">
+        <li
+          v-for="{ key, currency, member } in familyTransfers"
+          :key="key"
+          class="flex flex-wrap items-center gap-x-4 gap-y-1 py-2"
+        >
+          <span class="min-w-0 flex-1">{{ memberName(member) }}</span>
+          <span class="whitespace-nowrap tabular-nums">
+            {{ formatAmount(member.suggested, currency.currency, locale, "auto") }}
+          </span>
+          <RouterLink
+            :to="{ name: 'transfer-new', query: { ...filterQuery, ...transferQuery(currency, member) } }"
+            class="whitespace-nowrap text-brand hover:text-brand-dark"
+          >
+            {{ $t("transactions.family.register") }}
+          </RouterLink>
+        </li>
+      </ul>
+    </div>
     <p v-if="!transactions && !error && !filterErrors.length" class="mt-6 text-slate-500">
       {{ $t("transactions.loading") }}
     </p>
-    <div role="search" class="mt-6 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
+    <div role="search" class="mt-6 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4 lg:grid-cols-7">
       <label>
         <span class="block text-slate-500">{{ $t("transactions.filters.wallet") }}</span>
         <select
@@ -305,6 +342,18 @@ onMounted(load);
         <select v-model="filters.tag" name="tag" class="mt-1 block w-full rounded border border-slate-300 px-2 py-1">
           <option value="">{{ $t("transactions.filters.all") }}</option>
           <option v-for="tag in tagList" :key="tag.id" :value="tag.id">{{ tag.name }}</option>
+        </select>
+      </label>
+      <label>
+        <span class="block text-slate-500">{{ $t("transactions.filters.shared") }}</span>
+        <select
+          v-model="filters.shared"
+          name="shared"
+          class="mt-1 block w-full rounded border border-slate-300 px-2 py-1"
+        >
+          <option value="">{{ $t("transactions.filters.all") }}</option>
+          <option value="true">{{ $t("transactions.filters.sharedOnly") }}</option>
+          <option value="false">{{ $t("transactions.filters.notShared") }}</option>
         </select>
       </label>
       <label>
@@ -356,6 +405,14 @@ onMounted(load);
               <td class="px-4 py-2">
                 <span class="flex items-center gap-2">
                   <span :title="transaction.notes">{{ transaction.description }}</span>
+                  <span
+                    v-if="transaction.is_shared"
+                    data-shared
+                    class="text-slate-400"
+                    :title="$t('transactions.shared')"
+                  >
+                    <Users class="size-4 shrink-0" :aria-label="$t('transactions.shared')" />
+                  </span>
                   <RouterLink
                     v-if="transaction.recurring_transaction"
                     :to="{ name: 'recurring-edit', params: { id: transaction.recurring_transaction } }"

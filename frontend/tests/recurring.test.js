@@ -23,6 +23,7 @@ const RENT = {
   category: 3,
   tags: [5],
   notes: "Landlord",
+  is_shared: false,
   frequency: "monthly",
   interval: 1,
   start_date: "2026-01-01",
@@ -222,12 +223,14 @@ describe("recurring transactions", () => {
       await wrapper.find("input[name=tags]").setChecked(true);
       expect(wrapper.find("input[name=tags]").element.closest("label").classList).toContain("text-white");
       await wrapper.find("textarea[name=notes]").setValue("Landlord");
+      await wrapper.find("input[name=is_shared]").setChecked(true);
       await submit(wrapper);
       expect(lastBody(fetch, "/api/recurring-transactions/", "POST")).toEqual({
         wallet: 1,
         description: "Rent",
         tags: [5],
         notes: "Landlord",
+        is_shared: true,
         interval: 1,
         frequency: "monthly",
         start_date: "2026-11-14",
@@ -269,6 +272,7 @@ describe("recurring transactions", () => {
         description: "Pocket money",
         tags: [],
         notes: "",
+        is_shared: false,
         interval: 2,
         frequency: "weekly",
         start_date: "2026-11-20",
@@ -301,6 +305,7 @@ describe("recurring transactions", () => {
         description: "Old subscription",
         tags: [],
         notes: "Landlord",
+        is_shared: false,
         interval: 1,
         frequency: "yearly",
         start_date: "2026-01-01",
@@ -494,6 +499,7 @@ describe("recurring transactions", () => {
         description: "Rent",
         tags: [5],
         notes: "Landlord",
+        is_shared: false,
         amount: "-810",
         category: 3,
         recurring_transaction: 7,

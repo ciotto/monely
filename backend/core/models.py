@@ -68,8 +68,13 @@ class Wallet(models.Model):
         default="EUR",
         validators=[RegexValidator(r"^[A-Z]{3}\Z", _("Enter a three-letter ISO 4217 currency code, e.g. EUR."))],
     )
-    owners = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="wallets", verbose_name=_("owners"))
+    # A personal wallet has a single owner, a joint one belongs to the whole family and has none
+    owners = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, blank=True, related_name="wallets", verbose_name=_("owners")
+    )
     is_archived = models.BooleanField(_("archived"), default=False)
+    # A joint wallet, which receives the family contributions (see the family balance)
+    is_shared = models.BooleanField(_("joint wallet"), default=False)
     created_at = models.DateTimeField(_("created at"), auto_now_add=True)
 
     class Meta:
@@ -145,6 +150,35 @@ class Budget(models.Model):
         return f"{self.category} {self.amount} {self.currency}"
 
 
+class Contribution(models.Model):
+    """
+    What the family has to transfer to the joint wallets every month, in total, in one currency: every user contributes
+    an equal share of it, from the first month on.
+    """
+
+    currency = models.CharField(
+        _("currency"),
+        max_length=3,
+        unique=True,
+        default="EUR",
+        validators=[RegexValidator(r"^[A-Z]{3}\Z", _("Enter a three-letter ISO 4217 currency code, e.g. EUR."))],
+    )
+    amount = models.DecimalField(
+        _("amount"), max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("0.00"))]
+    )
+    # Always the first day of the month
+    start_month = models.DateField(_("first month"))
+    created_at = models.DateTimeField(_("created at"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("family contribution")
+        verbose_name_plural = _("family contributions")
+        ordering = ("currency",)
+
+    def __str__(self):
+        return f"{self.amount} {self.currency}"
+
+
 class Tag(Label):
     """A free-form label attached to many transactions (e.g. holiday-2026), orthogonal to the categories."""
 
@@ -194,6 +228,8 @@ class Transaction(models.Model):
     )
     tags = models.ManyToManyField(Tag, blank=True, related_name="transactions", verbose_name=_("tags"))
     notes = models.TextField(_("notes"), blank=True)
+    # A shared expense paid from a personal wallet counts as a contribution to the joint wallets (never on transfers)
+    is_shared = models.BooleanField(_("shared expense"), default=False)
     # Set on the two transactions of a transfer, which are edited and deleted together
     transfer = models.ForeignKey(
         Transfer,
@@ -259,6 +295,8 @@ class RecurringTransaction(models.Model):
     )
     tags = models.ManyToManyField(Tag, blank=True, related_name="recurring_transactions", verbose_name=_("tags"))
     notes = models.TextField(_("notes"), blank=True)
+    # Copied to the transactions that register its occurrences
+    is_shared = models.BooleanField(_("shared expense"), default=False)
     frequency = models.CharField(_("frequency"), max_length=10, choices=Frequency, default=Frequency.MONTHLY)
     # Repeats every `interval` weeks, months or years, e.g. 3 months for a quarterly bill
     interval = models.PositiveSmallIntegerField(_("interval"), default=1, validators=[MinValueValidator(1)])
